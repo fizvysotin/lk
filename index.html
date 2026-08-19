@@ -485,7 +485,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '1.3 · 19 августа 2026, 23:40';
+const APP_VERSION = '1.4 · 20 августа 2026, 00:10';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -926,16 +926,18 @@ const SYNC = {
   /** проверить облако при возвращении на вкладку */
   async refreshIfIdle() {
     if (!cloudOn() || !AUTH.s || this.dirty || this.busy) return;
+    if (document.getElementById('overlay').classList.contains('open')) return; // открыто окно — не мешаем
     try {
       const row = await this.pull();
-      if (row && row.rev > this.rev) {
-        this.rev = row.rev;
-        DB = normalizeDB(row.data);
-        writeCache();
-        render();
-        this.setStatus('conflict', 'Загружены свежие данные');
-        setTimeout(() => this.setStatus('idle'), 2500);
-      }
+      if (!row || row.rev <= this.rev) return;
+      this.rev = row.rev;
+      const next = normalizeDB(row.data);
+      if (JSON.stringify(next) === JSON.stringify(DB)) { writeCache(); return; } // данные те же — перерисовывать незачем
+      DB = next;
+      writeCache();
+      render();
+      this.setStatus('conflict', 'Загружены свежие данные');
+      setTimeout(() => this.setStatus('idle'), 2500);
     } catch (e) { }
   }
 };
@@ -1428,7 +1430,6 @@ function viewWeek() {
       <div class="sub">Отмечайте посещаемость и оплату прямо в карточке занятия</div></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       ${scheduleSwitch()}
-      <button class="btn btn-sm" id="addOne">+ Разовое</button>
       <button class="btn btn-sm" id="expWeek">⬇ CSV</button>
     </div>
   </div>
@@ -1467,7 +1468,6 @@ function viewWeek() {
   $('#wPrev').onclick = () => { weekAnchor = addDays(weekAnchor, -7); render(); };
   $('#wNext').onclick = () => { weekAnchor = addDays(weekAnchor, 7); render(); };
   $('#wNow').onclick = () => { weekAnchor = startOfWeek(new Date()); render(); };
-  $('#addOne').onclick = () => lessonModal(null);
   $('#expWeek').onclick = () => exportOcc(occ, 'raspisanie_' + from + '_' + to + '.csv');
 
   $$('[data-allday]').forEach(b => b.onclick = () => {
@@ -1503,78 +1503,39 @@ function targetOptions(kind, sel) {
   return activeStudents().map(s => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}${s.grade ? ' (' + s.grade + ' кл.)' : ''}</option>`).join('');
 }
 
+/** Карточка одного занятия из расписания: перенос времени, цена, статус, оплата, заметка */
 function lessonModal(o) {
-  const isNew = !o;
-  const isExtra = o && !o.slotId;
-  const d = o ? o.date : todayKey();
+  const d = parseKey(o.date);
   openModal(`
-    <div class="modal-head"><h3>${isNew ? 'Разовое занятие' : 'Занятие ' + fmtDate(parseKey(d))}</h3><button class="close-x" data-close>×</button></div>
+    <div class="modal-head">
+      <div><h3>${esc(targetName(o.kind, o.refId))}</h3>
+        <div class="muted small">${DAYS_FULL[wdIdx(d)]}, ${fmtDate(d)} · ${subjLabel(o.subject)} · ${o.dur || 60} мин</div></div>
+      <button class="close-x" data-close>×</button></div>
     <div class="modal-body">
       <div class="row">
-        <div class="field"><label>Дата</label><input type="date" id="lDate" value="${d}"></div>
-        <div class="field"><label>Время</label><input type="time" id="lTime" value="${o ? o.time : '17:00'}"></div>
-        <div class="field"><label>Длительность, мин</label><input type="number" id="lDur" min="15" step="15" value="${o ? (o.dur || 60) : 60}"></div>
+        <div class="field"><label>Время в этот день</label><input type="time" id="lTime" value="${esc(o.time)}">
+          <span class="hint">Меняется только для этого занятия</span></div>
+        <div class="field"><label>Стоимость, ₽</label><input type="number" id="lPrice" step="50" value="${o.price}"></div>
       </div>
-      <div class="row">
-        <div class="field"><label>Кто занимается</label>
-          <select id="lKind"><option value="student" ${o && o.kind === 'group' ? '' : 'selected'}>Ученик</option><option value="group" ${o && o.kind === 'group' ? 'selected' : ''}>Группа</option></select></div>
-        <div class="field"><label>Имя</label><select id="lRef">${targetOptions(o ? o.kind : 'student', o ? o.refId : null)}</select></div>
-      </div>
-      <div class="row">
-        <div class="field"><label>Предмет</label>
-          <select id="lSubj">${['Ф', 'М', 'Ф,М'].map(s => `<option value="${s}" ${o && o.subject === s ? 'selected' : ''}>${subjLabel(s)}</option>`).join('')}</select></div>
-        <div class="field"><label>Стоимость, ₽</label><input type="number" id="lPrice" step="50" value="${o ? o.price : DB.settings.defaultPrice}"></div>
-      </div>
-      ${o ? `<div class="field"><label>Статус</label>
+      <div class="field"><label>Статус</label>
         <select id="lSt">${Object.keys(STATUS).map(s => `<option value="${s}" ${o.st === s ? 'selected' : ''}>${STATUS[s].icon} ${STATUS[s].label}</option>`).join('')}</select></div>
-        <label class="chk ${o.paid ? 'on' : ''}" id="lPaidWrap"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>` : ''}
+      <label class="chk ${o.paid ? 'on' : ''}" id="lPaidWrap"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>
       <div class="field" style="margin-top:12px"><label>Заметка к занятию</label>
-        <textarea id="lNote" placeholder="Что прошли, что задать, о чём поговорить с родителями…">${o ? esc(o.note) : ''}</textarea></div>
-      ${o && o.slotId ? '<div class="muted small">Это занятие из постоянного расписания. Изменения даты/времени здесь коснутся только этого дня.</div>' : ''}
+        <textarea id="lNote" placeholder="Что прошли, что задать к следующему разу…">${esc(o.note)}</textarea></div>
     </div>
     <div class="modal-foot">
-      ${isExtra ? '<button class="btn btn-danger" id="lDel">Удалить занятие</button>' : ''}
       <button class="btn" data-close>Отмена</button>
       <button class="btn btn-primary" id="lSave">Сохранить</button>
     </div>`);
 
-  const kindSel = $('#lKind');
-  kindSel.onchange = () => { $('#lRef').innerHTML = targetOptions(kindSel.value, null); syncPrice(); };
-  $('#lRef').onchange = syncPrice;
-  $('#lDur').oninput = syncPrice;
-  function syncPrice() {
-    const p = defaultPriceFor(kindSel.value, $('#lRef').value, +$('#lDur').value || 60);
-    if (p) $('#lPrice').value = p;
-  }
-  if ($('#lPaid')) $('#lPaid').onchange = e => $('#lPaidWrap').classList.toggle('on', e.target.checked);
-
+  $('#lPaid').onchange = e => $('#lPaidWrap').classList.toggle('on', e.target.checked);
   $('#lSave').onclick = () => {
-    const ref = $('#lRef').value;
-    if (!ref) { toast('Сначала добавьте ученика или группу'); return; }
-    const data = {
-      date: $('#lDate').value, time: $('#lTime').value, dur: +$('#lDur').value || 60,
-      kind: kindSel.value, refId: ref, subject: $('#lSubj').value, price: +$('#lPrice').value || 0
-    };
-    if (isNew) {
-      const id = 'x' + uid();
-      DB.extra.push(Object.assign({ id: id }, data));
-      if ($('#lNote').value) setMark(id, { note: $('#lNote').value });
-      toast('Занятие добавлено');
-    } else if (isExtra) {
-      const e = DB.extra.find(x => x.id === o.id);
-      Object.assign(e, data);
-      setMark(o.id, { st: $('#lSt').value, paid: $('#lPaid').checked, note: $('#lNote').value, price: data.price });
-    } else {
-      setMark(o.id, {
-        st: $('#lSt').value, paid: $('#lPaid').checked, note: $('#lNote').value,
-        price: data.price, time: data.time
-      });
-    }
-    save(); closeModal(); render();
+    setMark(o.id, {
+      st: $('#lSt').value, paid: $('#lPaid').checked, note: $('#lNote').value,
+      price: +$('#lPrice').value || 0, time: $('#lTime').value
+    });
+    save(); closeModal(); render(true); toast('Сохранено');
   };
-  if (isExtra) $('#lDel').onclick = () => confirmBox('Удалить это разовое занятие?', () => {
-    DB.extra = DB.extra.filter(x => x.id !== o.id); delete DB.marks[o.id]; save(); closeModal(); render(); toast('Занятие удалено');
-  });
 }
 
 /* =========================================================
@@ -1763,7 +1724,7 @@ function viewStudents() {
       : '<div class="empty"><h4>Пока нет учеников</h4>Добавьте первого ученика — и его можно будет поставить в расписание</div>'}`;
 
   $('#addSt').onclick = () => studentModal(null);
-  $('#stQ').oninput = e => { stFilter.q = e.target.value; const p = e.target.selectionStart; render(); const i = $('#stQ'); i.focus(); i.setSelectionRange(p, p); };
+  $('#stQ').oninput = e => { stFilter.q = e.target.value; const p = e.target.selectionStart; render(true); const i = $('#stQ'); i.focus(); i.setSelectionRange(p, p); };
   $$('[data-mode]').forEach(b => b.onclick = () => { stFilter.mode = b.dataset.mode; render(); });
   $$('[data-edit]').forEach(b => b.onclick = () => studentModal(student(b.dataset.edit)));
   $$('[data-open]').forEach(b => b.onclick = () => studentCard(student(b.dataset.open)));
@@ -2107,7 +2068,6 @@ function viewSettings() {
       <div class="list-line"><div class="grow">Учеников</div><b>${DB.students.length}</b></div>
       <div class="list-line"><div class="grow">Групп</div><b>${DB.groups.length}</b></div>
       <div class="list-line"><div class="grow">Постоянных занятий в неделю</div><b>${DB.slots.filter(x => !x.archived).length}</b></div>
-      <div class="list-line"><div class="grow">Разовых занятий</div><b>${DB.extra.length}</b></div>
       <div class="list-line" style="margin-bottom:12px"><div class="grow">Отметок посещаемости</div><b>${marks}</b></div>
       <div class="row">
         <button class="btn" id="expJson">⬇ Скачать копию (JSON)</button>
@@ -2163,15 +2123,21 @@ function viewSettings() {
     </div>` : ''}
   </div>`;
 
-  $('#cfSave').onclick = () => {
+  // настройки применяются сразу, как только вы уходите из поля — ничего не теряется
+  function readSettings() {
     s.owner = $('#cfOwner').value.trim() || 'Репетитор';
     s.defaultPrice = +$('#cfPrice').value || 0;
     s.groupPrice = +$('#cfGroup').value || 0;
     s.wishPrice = +$('#cfWish').value || 0;
     s.taxRate = +$('#cfTax').value || 0;
     s.workGoal = +$('#cfGoal').value || 25;
-    save(); $('#ownerName').textContent = s.owner; render(); toast('Настройки сохранены');
-  };
+    save();
+    $('#ownerName').textContent = s.owner;
+  }
+  ['#cfOwner', '#cfPrice', '#cfGroup', '#cfWish', '#cfTax', '#cfGoal'].forEach(sel => {
+    const el = $(sel); if (el) el.onchange = readSettings;
+  });
+  $('#cfSave').onclick = () => { readSettings(); render(true); toast('Настройки сохранены'); };
   $$('[data-theme]').forEach(b => b.onclick = () => { s.theme = b.dataset.theme; save(); applyTheme(); render(); });
   $('#expJson').onclick = () => { download('rezerv_lk_' + todayKey() + '.json', JSON.stringify(DB, null, 1), 'json'); toast('Копия скачана'); };
   $('#impJson').onclick = () => $('#fileJson').click();
@@ -2261,11 +2227,27 @@ function seedDemo() {
    ========================================================= */
 const VIEWS = { dash: viewDash, week: viewSchedule, students: viewStudents, groups: viewGroups, money: viewMoney, settings: viewSettings };
 
-function render() {
+let pendingRender = false;
+/** Пока пользователь печатает в поле — страницу не перерисовываем, иначе теряется фокус */
+function isTyping() {
+  const a = document.activeElement;
+  if (!a) return false;
+  const app = document.getElementById('app');
+  return /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && app && app.contains(a);
+}
+function render(force) {
+  if (!force && isTyping()) { pendingRender = true; return; }
+  pendingRender = false;
+  const on = document.getElementById('ownerName');
+  if (on && DB) on.textContent = DB.settings.owner;
   $$('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.view === VIEW));
   (VIEWS[VIEW] || viewDash)();
   window.scrollTo({ top: window.scrollY > 200 ? 0 : window.scrollY, behavior: 'instant' });
 }
+document.addEventListener('focusout', () => {
+  if (!pendingRender) return;
+  setTimeout(() => { if (pendingRender && !isTyping()) render(); }, 150);
+});
 
 function formulaBg() {
   const items = ['E = mc²', 'F = ma', 'pV = νRT', 'v = λf', 'Q = cmΔt', 'W = qU', 'a = v²/R', 'E = hν', 'I = U/R', 'F = kx', 'p = mv', 'λ = h/p', 'P = UI', 'g = 9,8 м/с²', 'x = A·cos(ωt)', 'η = A/Q'];
