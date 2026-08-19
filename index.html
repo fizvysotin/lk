@@ -176,6 +176,32 @@ a{color:var(--brand)}
 .soc:hover{border-color:var(--brand);background:var(--brand-soft)}
 .soc-ic{font-size:20px;line-height:1}
 .soc b{font-weight:650}
+.err-box{
+  background:var(--st-crit-bg);color:var(--st-crit);border-radius:var(--radius-sm);
+  padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:12px;line-height:1.5;
+}
+/* сетка заданий работы */
+.tasks{display:flex;flex-wrap:wrap;gap:6px}
+.task{
+  width:52px;padding:5px 0;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface);
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.1;
+}
+.task:hover{border-color:var(--brand)}
+.task-n{font-weight:700;font-size:13px}
+.task-p{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.task.f{background:var(--st-good-bg);border-color:var(--st-good)}
+.task.f .task-p{color:var(--st-good)}
+.task.p{background:var(--st-warn-bg);border-color:var(--st-warn)}
+.task.p .task-p{color:var(--st-warn)}
+.task.z{background:var(--surface)}
+.tasks-mini{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px}
+.tm{
+  width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:700;
+  display:grid;place-items:center;background:var(--surface-3);color:var(--muted);
+}
+.tm.f{background:var(--st-good);color:#fff}
+.tm.p{background:var(--st-warn);color:#3a2a00}
+.tm.z{background:var(--st-crit-bg);color:var(--st-crit)}
 
 /* ============ BUTTONS / FORMS ============ */
 .btn{
@@ -456,8 +482,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
     <div>
       <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
         <div>
-          <div class="brand-title">ЕГЭ / ОГЭ по физике/математике</div>
-          <div class="brand-sub">Личный кабинет репетитора</div>
+          <div class="brand-title">Личный кабинет репетитора ЕГЭ / ОГЭ</div>
         </div>
       </div>
       <div class="brand-tutor">🎓 Репетитор: <b id="ownerName">Юрий Высотин</b></div>
@@ -476,6 +501,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
     <button class="tab active" data-view="dash"><span class="ic">📊</span>Дашборд</button>
     <button class="tab" data-view="week"><span class="ic">🗓</span>Расписание</button>
     <button class="tab" data-view="students"><span class="ic">🧑‍🎓</span>Ученики и группы</button>
+    <button class="tab" data-view="prog"><span class="ic">📈</span>Успеваемость</button>
     <button class="tab" data-view="money"><span class="ic">💸</span>Оплаты и долги</button>
     <button class="tab" data-view="mat"><span class="ic">📚</span>Материалы</button>
     <button class="tab" data-view="settings"><span class="ic">⚙️</span>Настройки</button>
@@ -495,7 +521,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '1.8 · 20 августа 2026, 02:00';
+const APP_VERSION = '1.9 · 20 августа 2026, 03:00';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -569,7 +595,10 @@ function defaultDB() {
     students: [],
     groups: [],
     slots: [],
-    extra: [],   // разовые занятия
+    extra: [],   // разовые занятия (не используется)
+    links: [],   // свои полезные ссылки
+    hw: [],      // домашние задания
+    works: [],   // контрольные и пробники
     marks: {}    // отметки: id занятия -> {st, paid, price, note}
   };
 }
@@ -825,10 +854,10 @@ async function api(path, opts, retry) {
   if (AUTH.s && AUTH.s.expires_at && AUTH.s.expires_at - 60 < Math.floor(Date.now() / 1000) && !retry) {
     try { await AUTH.refresh(); } catch (e) { }
   }
-  const h = Object.assign({
-    apikey: CLOUD.key,
-    'Content-Type': 'application/json'
-  }, opts.headers || {});
+  const h = Object.assign({}, opts.headers || {});
+  h.apikey = CLOUD.key;
+  // raw: тело уходит как есть (файл), Content-Type не навязываем
+  if (!opts.raw && !h['Content-Type']) h['Content-Type'] = 'application/json';
   if (AUTH.s) h.Authorization = 'Bearer ' + AUTH.s.access_token;
   const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h }));
   if (r.status === 401 && !retry) {
@@ -973,8 +1002,8 @@ function showAuth(msg) {
   el.innerHTML = `
     <form class="auth-card" id="authForm">
       <div class="auth-logo">
-        <div><div class="auth-title">ЕГЭ / ОГЭ по физике/математике</div>
-        <div class="auth-sub">Личный кабинет репетитора</div></div></div>
+        <div><div class="auth-title">Личный кабинет репетитора</div>
+        <div class="auth-sub">ЕГЭ / ОГЭ</div></div></div>
       <div class="field"><label>Почта</label><input type="email" id="aEmail" autocomplete="username" required placeholder="you@example.com"></div>
       <div class="field"><label>Пароль</label><input type="password" id="aPass" autocomplete="current-password" required placeholder="••••••••"></div>
       <div id="authErr" class="auth-err">${msg ? esc(msg) : ''}</div>
@@ -1003,7 +1032,7 @@ function showAuth(msg) {
 function normalizeDB(data) {
   const d = Object.assign(defaultDB(), data || {});
   d.settings = Object.assign(defaultDB().settings, d.settings || {});
-  ['students', 'groups', 'slots', 'extra'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+  ['students', 'groups', 'slots', 'extra', 'links', 'hw', 'works'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
   if (!d.marks || typeof d.marks !== 'object') d.marks = {};
   // переход на «цену с человека» в группах
   d.groups.forEach(g => {
@@ -1909,14 +1938,19 @@ async function filesList() {
 
 async function fileUpload(file) {
   const path = encPath(storagePath(file.name));
-  const h = { apikey: CLOUD.key, Authorization: 'Bearer ' + AUTH.s.access_token, 'x-upsert': 'true' };
-  if (file.type) h['Content-Type'] = file.type;
-  const r = await fetch(CLOUD.url + '/storage/v1/object/' + BUCKET + '/' + path, { method: 'POST', headers: h, body: file });
-  if (!r.ok) {
-    const t = await r.text().catch(() => '');
-    if (r.status === 413 || /maximum allowed size|too large/i.test(t)) throw new Error('Файл слишком большой — до 50 МБ');
-    throw new Error('Не удалось загрузить файл (' + r.status + ')');
-  }
+  const headers = { 'x-upsert': 'true' };
+  if (file.type) headers['Content-Type'] = file.type;
+  const r = await api('/storage/v1/object/' + BUCKET + '/' + path, {
+    method: 'POST', raw: true, body: file, headers: headers
+  });
+  if (r.ok) return;
+  const t = await r.text().catch(() => '');
+  let msg = '';
+  try { const j = JSON.parse(t); msg = j.message || j.error || ''; } catch (e) { msg = t; }
+  if (r.status === 413 || /maximum allowed size|too large|exceeded/i.test(msg)) throw new Error('файл больше 50 МБ');
+  if (/bucket not found/i.test(msg)) throw new Error('хранилище ещё не настроено — напишите мне, включу');
+  if (r.status === 401 || r.status === 403 || /row-level security|Unauthorized|jwt/i.test(msg)) throw new Error('истёк вход — обновите страницу и войдите заново');
+  throw new Error((msg || 'ошибка ' + r.status).slice(0, 120));
 }
 
 async function fileLink(name) {
@@ -1963,13 +1997,23 @@ function viewMaterials() {
   </div>
 
   <div class="card">
-    <div class="card-head"><div><div class="card-title">Банки заданий</div>
-      <div class="card-sub">Официальные открытые банки ФИПИ</div></div></div>
+    <div class="card-head"><div><div class="card-title">Полезные ссылки</div>
+      <div class="card-sub">Банки заданий ФИПИ и всё, что добавите сами</div></div>
+      <button class="btn btn-sm" id="addLink">+ Добавить ссылку</button>
+    </div>
     ${BANKS.map(b => `<div class="list-line">
       <span style="font-size:18px">🏛</span>
       <div class="grow"><a href="${b.url}" target="_blank" rel="noopener" style="font-weight:600">${esc(b.name)}</a>
         <div class="muted small">${esc(b.note)}</div></div>
       <a class="btn btn-sm" href="${b.url}" target="_blank" rel="noopener">Открыть</a>
+    </div>`).join('')}
+    ${(DB.links || []).map(l => `<div class="list-line">
+      <span style="font-size:18px">🔗</span>
+      <div class="grow"><a href="${esc(l.url)}" target="_blank" rel="noopener" style="font-weight:600">${esc(l.name)}</a>
+        <div class="muted small">${esc(l.note || l.url.replace(/^https?:\/\//, ''))}</div></div>
+      <a class="btn btn-sm" href="${esc(l.url)}" target="_blank" rel="noopener">Открыть</a>
+      <button class="btn btn-sm btn-ghost" data-ledit="${l.id}">✎</button>
+      <button class="btn btn-sm btn-ghost" data-ldel="${l.id}">✕</button>
     </div>`).join('')}
   </div>
 
@@ -1984,18 +2028,33 @@ function viewMaterials() {
     </div>
   </div>`;
 
+  $('#addLink').onclick = () => linkModal(null);
+  $$('[data-ledit]').forEach(b => b.onclick = () => linkModal((DB.links || []).find(l => l.id === b.dataset.ledit)));
+  $$('[data-ldel]').forEach(b => b.onclick = () => {
+    const l = (DB.links || []).find(x => x.id === b.dataset.ldel);
+    confirmBox('Удалить ссылку «' + l.name + '»?', () => {
+      DB.links = DB.links.filter(x => x.id !== l.id); save(); render(true); toast('Ссылка удалена');
+    });
+  });
+
   if (cloudOn()) {
     $('#fUpBtn').onclick = () => $('#fInput').click();
     $('#fInput').onchange = async e => {
       const files = Array.from(e.target.files || []);
+      e.target.value = '';
       if (!files.length) return;
-      $('#fList').innerHTML = '<div class="muted small">Загружаю ' + files.length + ' ' + plural(files.length, 'файл', 'файла', 'файлов') + '…</div>';
+      const box = $('#fList');
+      const failed = [];
+      let done = 0;
       for (const f of files) {
-        try { await fileUpload(f); }
-        catch (ex) { toast(f.name + ': ' + ex.message); }
+        box.innerHTML = '<div class="muted small">Загружаю «' + esc(f.name) + '» ('
+          + (done + 1) + ' из ' + files.length + ')…</div>';
+        try { await fileUpload(f); done++; }
+        catch (ex) { failed.push(esc(f.name) + ' — ' + esc(ex.message)); }
       }
       matFiles = null;
-      toast('Готово');
+      matError = failed.length ? 'Не удалось загрузить:<br>• ' + failed.join('<br>• ') : '';
+      toast(failed.length ? (done ? 'Загружено ' + done + ', с ошибками ' + failed.length : 'Не удалось загрузить') : 'Файлы загружены');
       loadFiles();
     };
     loadFiles();
@@ -2006,20 +2065,21 @@ function viewMaterials() {
 
 async function loadFiles() {
   const box = $('#fList'); if (!box) return;
+  const err = matError ? '<div class="err-box">' + matError + '</div>' : '';
   try {
     matFiles = await filesList();
   } catch (e) {
-    box.innerHTML = '<div class="empty small">Не удалось получить список файлов. Проверьте связь и обновите страницу.</div>';
+    box.innerHTML = err + '<div class="empty small">Не удалось получить список файлов. Проверьте связь и обновите страницу.</div>';
     return;
   }
   if (!matFiles.length) {
-    box.innerHTML = `<div class="empty">
+    box.innerHTML = err + `<div class="empty">
       <h4>Файлов пока нет</h4>
       Загрузите справочник формул, конспекты или подборки задач — PDF, Word, картинки.<br>
       Они будут доступны с компьютера и телефона, до 50 МБ на файл.</div>`;
     return;
   }
-  box.innerHTML = '<div class="tbl-wrap"><table class="tbl"><tbody>' + matFiles.map(f => {
+  box.innerHTML = err + '<div class="tbl-wrap"><table class="tbl"><tbody>' + matFiles.map(f => {
     const size = f.metadata && f.metadata.size ? fileSize(f.metadata.size) : '';
     const when = f.updated_at || f.created_at || '';
     return `<tr>
@@ -2046,6 +2106,315 @@ async function loadFiles() {
     try { await fileDelete(b.dataset.fdel); matFiles = null; toast('Файл удалён'); loadFiles(); }
     catch (e) { toast(e.message); }
   }));
+}
+
+/** Добавить или изменить свою ссылку */
+function linkModal(l) {
+  const isNew = !l;
+  openModal(`
+    <div class="modal-head"><h3>${isNew ? 'Новая ссылка' : 'Ссылка'}</h3><button class="close-x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Название</label>
+        <input type="text" id="lkName" value="${l ? esc(l.name) : ''}" placeholder="Например, РешуЕГЭ — физика"></div>
+      <div class="field"><label>Адрес</label>
+        <input type="text" id="lkUrl" value="${l ? esc(l.url) : ''}" placeholder="phys-ege.sdamgia.ru"></div>
+      <div class="field"><label>Подпись (необязательно)</label>
+        <input type="text" id="lkNote" value="${l ? esc(l.note || '') : ''}" placeholder="Чем полезна"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Отмена</button>
+      <button class="btn btn-primary" id="lkSave">Сохранить</button></div>`);
+  $('#lkSave').onclick = () => {
+    const name = $('#lkName').value.trim();
+    let url = $('#lkUrl').value.trim();
+    if (!name || !url) { toast('Нужны название и адрес'); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    if (!DB.links) DB.links = [];
+    if (isNew) DB.links.push({ id: 'l' + uid(), name: name, url: url, note: $('#lkNote').value.trim() });
+    else Object.assign(l, { name: name, url: url, note: $('#lkNote').value.trim() });
+    save(); closeModal(); render(true); toast('Сохранено');
+  };
+}
+/* =========================================================
+   УСПЕВАЕМОСТЬ: домашние задания, контрольные и пробники
+   ========================================================= */
+const WORK_TYPES = ['Пробник', 'Контрольная', 'Самостоятельная', 'Тест'];
+let progStudent = 'all';
+
+const hwList = () => (DB.hw || []);
+const workList = () => (DB.works || []);
+
+const workPrimary = w => (w.tasks || []).reduce((a, t) => a + (+t.got || 0), 0);
+const workMax = w => (w.tasks || []).reduce((a, t) => a + (+t.max || 0), 0);
+const workPct = w => { const m = workMax(w); return m ? Math.round(workPrimary(w) / m * 100) : 0; };
+
+/** Подсказка оценки по проценту выполнения */
+function suggestGrade(w) {
+  const p = workPct(w);
+  if (w.scale === 100) return Math.round(p);
+  if (p >= 85) return 5;
+  if (p >= 65) return 4;
+  if (p >= 45) return 3;
+  return 2;
+}
+const gradeColor = w => {
+  const g = +w.grade;
+  if (!g) return '';
+  const good = w.scale === 100 ? g >= 70 : g >= 4;
+  const bad = w.scale === 100 ? g < 40 : g <= 2;
+  return good ? 'color:var(--st-good)' : (bad ? 'color:var(--st-crit)' : 'color:var(--st-warn)');
+};
+
+function studentOptions(sel, allLabel) {
+  return (allLabel ? '<option value="all">' + allLabel + '</option>' : '')
+    + activeStudents().sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+      .map(s => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}${s.grade ? ' (' + s.grade + ' кл.)' : ''}</option>`).join('');
+}
+
+/* ---------- экран ---------- */
+function viewProgress() {
+  const filt = x => progStudent === 'all' || x.studentId === progStudent;
+  const hw = hwList().filter(filt).slice().sort((a, b) => (b.due || b.date).localeCompare(a.due || a.date));
+  const works = workList().filter(filt).slice().sort((a, b) => b.date.localeCompare(a.date));
+
+  const hwDone = hw.filter(h => h.done).length;
+  const hwPct = hw.length ? Math.round(hwDone / hw.length * 100) : 0;
+  const graded = works.filter(w => w.grade);
+  const avg5 = graded.filter(w => w.scale === 5);
+  const avg100 = graded.filter(w => w.scale === 100);
+  const mean = arr => arr.length ? Math.round(arr.reduce((a, w) => a + (+w.grade), 0) / arr.length * 10) / 10 : 0;
+  const overdue = hw.filter(h => !h.done && h.due && h.due < todayKey()).length;
+
+  $('#app').innerHTML = `
+  <div class="page-head">
+    <div><h2>Успеваемость</h2><div class="sub">Домашние задания, контрольные и пробники с разбором по заданиям</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="pStudent" style="min-width:180px">${studentOptions(progStudent, 'Все ученики')}</select>
+      <button class="btn btn-primary btn-sm" id="addHw">+ Домашка</button>
+      <button class="btn btn-sm" id="addWork">+ Работа</button>
+    </div>
+  </div>
+
+  <div class="grid cols-4" style="margin-bottom:14px">
+    <div class="stat"><div class="label">Домашка сделана</div><div class="value">${hwPct}%</div>
+      <div class="delta">${hwDone} из ${hw.length}</div></div>
+    <div class="stat"><div class="label">Просрочено</div><div class="value" style="${overdue ? 'color:var(--st-crit)' : ''}">${overdue}</div>
+      <div class="delta">${overdue ? 'стоит напомнить' : 'всё вовремя'}</div></div>
+    <div class="stat"><div class="label">Средняя оценка</div><div class="value">${mean(avg5) || '—'}</div>
+      <div class="delta">по пятибалльной, ${avg5.length} ${plural(avg5.length, 'работа', 'работы', 'работ')}</div></div>
+    <div class="stat"><div class="label">Средний балл ЕГЭ</div><div class="value">${mean(avg100) || '—'}</div>
+      <div class="delta">по стобалльной, ${avg100.length} ${plural(avg100.length, 'работа', 'работы', 'работ')}</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Домашние задания</div>
+      <div class="card-sub">Нажмите на статус, чтобы отметить выполнение</div></div></div>
+    ${hw.length ? `<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Ученик</th><th>Задание</th><th>К дате</th><th>Статус</th><th></th></tr></thead>
+      <tbody>${hw.slice(0, 100).map(h => `<tr>
+        <td class="nowrap"><b>${esc(targetName('student', h.studentId))}</b></td>
+        <td>${esc(h.text)}</td>
+        <td class="nowrap muted small">${h.due ? fmtDate(parseKey(h.due)) : '—'}</td>
+        <td><button class="pay-btn ${h.done ? 'on' : ''}" data-hwdone="${h.id}">${h.done ? '✓ сделано' : (h.due && h.due < todayKey() ? '✕ просрочено' : '· не сдано')}</button></td>
+        <td class="nowrap"><button class="btn btn-sm btn-ghost" data-hwedit="${h.id}">✎</button>
+          <button class="btn btn-sm btn-ghost" data-hwdel="${h.id}">✕</button></td>
+      </tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty small">Домашних заданий пока нет. Нажмите «+ Домашка», чтобы выдать первое.</div>'}
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Контрольные и пробники</div>
+      <div class="card-sub">Оценка, первичный балл и разбор по заданиям</div></div></div>
+    ${works.length ? `<div class="cards">${works.map(w => `
+      <div class="st-card">
+        <div class="st-top">
+          <div style="flex:1;min-width:0">
+            <div class="st-name">${esc(w.title || w.type)}</div>
+            <div class="st-meta">${esc(targetName('student', w.studentId))} · ${fmtDate(parseKey(w.date))} · ${esc(w.exam)}</div>
+          </div>
+          <div class="nowrap" style="text-align:right">
+            <div style="font-size:22px;font-weight:750;${gradeColor(w)}">${w.grade || '—'}</div>
+            <div class="muted small">${w.scale === 100 ? 'из 100' : 'из 5'}</div>
+          </div>
+        </div>
+        <div class="small">Первичный балл <b>${workPrimary(w)}</b> из ${workMax(w)} · ${workPct(w)}%</div>
+        <div class="bar-mini"><i style="width:${workPct(w)}%"></i></div>
+        <div class="tasks-mini">${(w.tasks || []).map((t, i) => {
+        const cls = !t.got ? 'z' : (t.got >= t.max ? 'f' : 'p');
+        return `<span class="tm ${cls}" title="Задание ${i + 1}: ${t.got} из ${t.max}">${i + 1}</span>`;
+      }).join('')}</div>
+        <div class="st-actions">
+          <button class="btn btn-sm" data-wedit="${w.id}">Открыть</button>
+          <button class="btn btn-sm btn-ghost" data-wdel="${w.id}">Удалить</button>
+        </div>
+      </div>`).join('')}</div>`
+      : '<div class="empty small">Работ пока нет. Нажмите «+ Работа», чтобы внести пробник или контрольную.</div>'}
+  </div>`;
+
+  $('#pStudent').onchange = e => { progStudent = e.target.value; render(true); };
+  $('#addHw').onclick = () => hwModal(null);
+  $('#addWork').onclick = () => workModal(null);
+  $$('[data-hwdone]').forEach(b => b.onclick = () => {
+    const h = hwList().find(x => x.id === b.dataset.hwdone);
+    h.done = !h.done; h.doneAt = h.done ? todayKey() : null;
+    save(); render(true);
+  });
+  $$('[data-hwedit]').forEach(b => b.onclick = () => hwModal(hwList().find(x => x.id === b.dataset.hwedit)));
+  $$('[data-hwdel]').forEach(b => b.onclick = () => confirmBox('Удалить это домашнее задание?', () => {
+    DB.hw = hwList().filter(x => x.id !== b.dataset.hwdel); save(); render(true); toast('Удалено');
+  }));
+  $$('[data-wedit]').forEach(b => b.onclick = () => workModal(workList().find(x => x.id === b.dataset.wedit)));
+  $$('[data-wdel]').forEach(b => b.onclick = () => confirmBox('Удалить эту работу вместе с разбором по заданиям?', () => {
+    DB.works = workList().filter(x => x.id !== b.dataset.wdel); save(); render(true); toast('Удалено');
+  }));
+}
+
+/* ---------- домашнее задание ---------- */
+function hwModal(h) {
+  const isNew = !h;
+  const preset = progStudent !== 'all' ? progStudent : null;
+  openModal(`
+    <div class="modal-head"><h3>${isNew ? 'Выдать домашнее задание' : 'Домашнее задание'}</h3><button class="close-x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="row">
+        <div class="field" style="flex:2 1 200px"><label>Ученик</label>
+          <select id="hStudent">${studentOptions(h ? h.studentId : preset, null)}</select></div>
+        <div class="field"><label>К какой дате</label><input type="date" id="hDue" value="${h && h.due ? h.due : key(addDays(new Date(), 7))}"></div>
+      </div>
+      <div class="field"><label>Что задано</label>
+        <textarea id="hText" placeholder="Например: §14, задачи 3–8; вариант 5 из сборника">${h ? esc(h.text) : ''}</textarea></div>
+      ${h ? `<label class="chk ${h.done ? 'on' : ''}" id="hDoneWrap"><input type="checkbox" id="hDone" ${h.done ? 'checked' : ''}> Выполнено</label>` : ''}
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Отмена</button>
+      <button class="btn btn-primary" id="hSave">Сохранить</button></div>`);
+  if ($('#hDone')) $('#hDone').onchange = e => $('#hDoneWrap').classList.toggle('on', e.target.checked);
+  $('#hSave').onclick = () => {
+    const sid = $('#hStudent').value;
+    const text = $('#hText').value.trim();
+    if (!sid) { toast('Сначала добавьте учеников'); return; }
+    if (!text) { toast('Напишите, что задано'); return; }
+    const data = { studentId: sid, due: $('#hDue').value || null, text: text };
+    if (!DB.hw) DB.hw = [];
+    if (isNew) DB.hw.push(Object.assign({ id: 'h' + uid(), date: todayKey(), done: false, doneAt: null }, data));
+    else Object.assign(h, data, { done: $('#hDone').checked, doneAt: $('#hDone').checked ? (h.doneAt || todayKey()) : null });
+    save(); closeModal(); render(true); toast('Сохранено');
+  };
+}
+
+/* ---------- контрольная / пробник ---------- */
+function newTasks(n, max) {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push({ max: max || 1, got: 0 });
+  return out;
+}
+
+function workModal(w) {
+  const isNew = !w;
+  const preset = progStudent !== 'all' ? progStudent : null;
+  const draft = w ? JSON.parse(JSON.stringify(w))
+    : { studentId: preset || (activeStudents()[0] || {}).id, date: todayKey(), title: '', type: 'Пробник', exam: 'ЕГЭ', scale: 100, grade: '', tasks: newTasks(26, 1), note: '' };
+
+  openModal(`
+    <div class="modal-head"><h3>${isNew ? 'Новая работа' : 'Работа'}</h3><button class="close-x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="row">
+        <div class="field" style="flex:2 1 180px"><label>Ученик</label>
+          <select id="wStudent">${studentOptions(draft.studentId, null)}</select></div>
+        <div class="field"><label>Дата</label><input type="date" id="wDate" value="${draft.date}"></div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:2 1 180px"><label>Название</label>
+          <input type="text" id="wTitle" value="${esc(draft.title)}" placeholder="Например, пробник №3 · механика"></div>
+        <div class="field"><label>Тип</label>
+          <select id="wType">${WORK_TYPES.map(t => `<option ${draft.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Экзамен</label>
+          <select id="wExam">
+            <option value="ЕГЭ" ${draft.exam === 'ЕГЭ' ? 'selected' : ''}>ЕГЭ — 100 баллов</option>
+            <option value="ОГЭ" ${draft.exam === 'ОГЭ' ? 'selected' : ''}>ОГЭ — оценка 2–5</option>
+          </select></div>
+        <div class="field"><label>Оценка</label>
+          <div style="display:flex;gap:6px">
+            <input type="number" id="wGrade" value="${draft.grade || ''}" min="0" step="1" placeholder="—">
+            <button class="btn btn-sm" id="wAuto" type="button" title="Посчитать по проценту выполнения">≈</button>
+          </div>
+          <span class="hint" id="wScaleHint"></span></div>
+      </div>
+
+      <div class="card" style="background:var(--surface-2);box-shadow:none;margin:14px 0">
+        <div class="card-title" style="margin-bottom:8px">Разбор по заданиям</div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field" style="max-width:130px"><label>Сколько заданий</label>
+            <input type="number" id="wN" min="1" max="60" value="${draft.tasks.length}"></div>
+          <div class="field" style="max-width:150px"><label>Баллы за задание</label>
+            <input type="number" id="wPts" min="1" max="10" value="1"></div>
+          <div class="field" style="max-width:110px"><label>с №</label><input type="number" id="wFrom" min="1" value="1"></div>
+          <div class="field" style="max-width:110px"><label>по №</label><input type="number" id="wTo" min="1" value="${draft.tasks.length}"></div>
+          <div class="field" style="max-width:130px"><label>&nbsp;</label>
+            <button class="btn btn-sm" id="wApply" type="button">Применить</button></div>
+        </div>
+        <div class="muted small" style="margin-bottom:10px">Клик по заданию добавляет балл: пусто → 1 → … → максимум → снова пусто.
+          Для второй части поставьте, например, «2 балла с 21 по 26» и нажмите «Применить».</div>
+        <div class="tasks" id="wTasks"></div>
+        <div class="small" style="margin-top:10px" id="wSum"></div>
+      </div>
+
+      <div class="field"><label>Комментарий</label>
+        <textarea id="wNote" placeholder="Что разобрать, типичные ошибки…">${esc(draft.note || '')}</textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Отмена</button>
+      <button class="btn btn-primary" id="wSave">Сохранить</button></div>`);
+
+  const drawTasks = () => {
+    $('#wTasks').innerHTML = draft.tasks.map((t, i) =>
+      `<button type="button" class="task ${!t.got ? 'z' : (t.got >= t.max ? 'f' : 'p')}" data-t="${i}">
+         <span class="task-n">${i + 1}</span><span class="task-p">${t.got}/${t.max}</span></button>`).join('');
+    const p = workPrimary(draft), m = workMax(draft);
+    $('#wSum').innerHTML = 'Первичный балл: <b>' + p + '</b> из ' + m + ' · ' + (m ? Math.round(p / m * 100) : 0) + '%';
+    $$('#wTasks .task').forEach(b => b.onclick = () => {
+      const t = draft.tasks[+b.dataset.t];
+      t.got = t.got >= t.max ? 0 : t.got + 1;
+      drawTasks();
+    });
+  };
+  const syncScale = () => {
+    draft.exam = $('#wExam').value;
+    draft.scale = draft.exam === 'ЕГЭ' ? 100 : 5;
+    $('#wGrade').max = draft.scale;
+    $('#wScaleHint').textContent = draft.scale === 100 ? 'от 0 до 100' : 'от 2 до 5';
+  };
+  syncScale(); drawTasks();
+
+  $('#wExam').onchange = syncScale;
+  $('#wN').onchange = () => {
+    const n = clamp(+$('#wN').value || 1, 1, 60);
+    const old = draft.tasks;
+    draft.tasks = newTasks(n, 1).map((t, i) => old[i] || t);
+    $('#wTo').value = n;
+    drawTasks();
+  };
+  $('#wApply').onclick = () => {
+    const from = clamp(+$('#wFrom').value || 1, 1, draft.tasks.length);
+    const to = clamp(+$('#wTo').value || draft.tasks.length, from, draft.tasks.length);
+    const pts = clamp(+$('#wPts').value || 1, 1, 10);
+    for (let i = from - 1; i < to; i++) { draft.tasks[i].max = pts; draft.tasks[i].got = Math.min(draft.tasks[i].got, pts); }
+    drawTasks();
+  };
+  $('#wAuto').onclick = () => { draft.grade = suggestGrade(draft); $('#wGrade').value = draft.grade; };
+
+  $('#wSave').onclick = () => {
+    const sid = $('#wStudent').value;
+    if (!sid) { toast('Сначала добавьте учеников'); return; }
+    const data = {
+      studentId: sid, date: $('#wDate').value || todayKey(), title: $('#wTitle').value.trim(),
+      type: $('#wType').value, exam: $('#wExam').value, scale: draft.scale,
+      grade: +$('#wGrade').value || null, tasks: draft.tasks, note: $('#wNote').value.trim()
+    };
+    if (!DB.works) DB.works = [];
+    if (isNew) DB.works.push(Object.assign({ id: 'w' + uid() }, data));
+    else Object.assign(w, data);
+    save(); closeModal(); render(true); toast('Сохранено');
+  };
 }
 /* =========================================================
    ОПЛАТЫ И ДОЛГИ
@@ -2345,7 +2714,7 @@ function clearMarks() {
 /* =========================================================
    РОУТЕР И ЗАПУСК
    ========================================================= */
-const VIEWS = { dash: viewDash, week: viewWeek, students: viewStudents, money: viewMoney, mat: viewMaterials, settings: viewSettings };
+const VIEWS = { dash: viewDash, week: viewWeek, students: viewStudents, prog: viewProgress, money: viewMoney, mat: viewMaterials, settings: viewSettings };
 
 let pendingRender = false;
 /** Пока пользователь печатает в поле — страницу не перерисовываем, иначе теряется фокус */
