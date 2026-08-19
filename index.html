@@ -465,7 +465,6 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
   <div class="wrap nav-inner" id="tabs">
     <button class="tab active" data-view="dash"><span class="ic">📊</span>Дашборд</button>
     <button class="tab" data-view="week"><span class="ic">🗓</span>Расписание</button>
-    <button class="tab" data-view="tpl"><span class="ic">🔁</span>Постоянные занятия</button>
     <button class="tab" data-view="students"><span class="ic">🧑‍🎓</span>Ученики</button>
     <button class="tab" data-view="groups"><span class="ic">👥</span>Группы</button>
     <button class="tab" data-view="money"><span class="ic">💸</span>Оплаты и долги</button>
@@ -486,6 +485,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
+const APP_VERSION = '1.3 · 19 августа 2026, 23:40';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -542,6 +542,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
 let DB = null;
 let VIEW = 'dash';
 let weekAnchor = startOfWeek(new Date());
+let schedMode = 'week';   // 'week' — отметки, 'tpl' — постоянные занятия
 let dashMonth = todayKey().slice(0, 7);
 
 function defaultDB() {
@@ -550,7 +551,8 @@ function defaultDB() {
     settings: {
       owner: 'Юрий Высотин',
       taxRate: 4,
-      defaultPrice: 1800,
+      defaultPrice: 2500,   // индивидуальное занятие, ₽ за 60 мин
+      groupPrice: 1200,     // групповое занятие, ₽ с человека за 60 мин
       wishPrice: 2500,
       theme: 'light',
       workGoal: 25
@@ -602,9 +604,20 @@ function targetGrade(kind, refId) {
   if (kind === 'group') { const g = group(refId); return g ? (g.studentIds.length + ' ' + plural(g.studentIds.length, 'ученик', 'ученика', 'учеников')) : ''; }
   const s = student(refId); return s && s.grade ? s.grade + ' кл.' : '';
 }
-function defaultPriceFor(kind, refId) {
-  if (kind === 'group') { const g = group(refId); return g && g.price ? g.price : DB.settings.defaultPrice; }
-  const s = student(refId); return s && s.price ? s.price : DB.settings.defaultPrice;
+/** Ставка за 60 минут */
+function rateFor(kind, refId) {
+  if (kind === 'group') {
+    const g = group(refId);
+    const per = g && g.perStudent ? g.perStudent : DB.settings.groupPrice;
+    return per * Math.max(1, g ? g.studentIds.length : 1);
+  }
+  const s = student(refId);
+  return s && s.price ? s.price : DB.settings.defaultPrice;
+}
+/** Стоимость занятия с учётом длительности, округлённая до 50 ₽ */
+function defaultPriceFor(kind, refId, dur) {
+  const v = rateFor(kind, refId) * ((dur || 60) / 60);
+  return Math.round(v / 50) * 50;
 }
 const avatarColor = name => {
   const hues = ['#1f7a4d', '#2a78d6', '#eb6834', '#4a3aa7', '#b8760a', '#0f766e', '#be1e5a', '#3f6212'];
@@ -620,7 +633,7 @@ function markOf(id) { return DB.marks[id] || null; }
 
 function buildOcc(base) {
   const m = markOf(base.id) || {};
-  const price = m.price != null ? m.price : (base.price != null ? base.price : defaultPriceFor(base.kind, base.refId));
+  const price = m.price != null ? m.price : (base.price != null ? base.price : defaultPriceFor(base.kind, base.refId, base.dur));
   return Object.assign({}, base, {
     price: price,
     st: m.st || 'plan',
@@ -982,6 +995,16 @@ function normalizeDB(data) {
   d.settings = Object.assign(defaultDB().settings, d.settings || {});
   ['students', 'groups', 'slots', 'extra'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
   if (!d.marks || typeof d.marks !== 'object') d.marks = {};
+  // переход на «цену с человека» в группах
+  d.groups.forEach(g => {
+    if (g.perStudent == null) {
+      const n = Math.max(1, (g.studentIds || []).length);
+      g.perStudent = g.price ? Math.round(g.price / n) : (d.settings.groupPrice || 1200);
+    }
+    delete g.price;
+  });
+  // персональные данные в кабинете больше не храним
+  d.students.forEach(s => { delete s.contact; delete s.parent; });
   return d;
 }
 
@@ -1359,6 +1382,18 @@ function lessonCard(o) {
   </div>`;
 }
 
+/** Переключатель «Неделя / Постоянные занятия» — общий для обоих режимов */
+function scheduleSwitch() {
+  return `<div class="seg-switch" id="schedSwitch">
+    <button data-mode="week" class="${schedMode === 'week' ? 'on' : ''}">🗓 Неделя</button>
+    <button data-mode="tpl" class="${schedMode === 'tpl' ? 'on' : ''}">🔁 Постоянные</button>
+  </div>`;
+}
+function wireScheduleSwitch() {
+  $$('#schedSwitch button').forEach(b => b.onclick = () => { schedMode = b.dataset.mode; render(); });
+}
+function viewSchedule() { return schedMode === 'tpl' ? viewTpl() : viewWeek(); }
+
 function viewWeek() {
   const from = key(weekAnchor), to = key(addDays(weekAnchor, 6));
   const occ = occurrences(from, to);
@@ -1391,8 +1426,9 @@ function viewWeek() {
   <div class="page-head">
     <div><h2>Расписание</h2>
       <div class="sub">Отмечайте посещаемость и оплату прямо в карточке занятия</div></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-sm" id="addOne">+ Разовое занятие</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${scheduleSwitch()}
+      <button class="btn btn-sm" id="addOne">+ Разовое</button>
       <button class="btn btn-sm" id="expWeek">⬇ CSV</button>
     </div>
   </div>
@@ -1427,6 +1463,7 @@ function viewWeek() {
     <div class="muted small" style="margin-top:8px">Деньги начисляются за статусы «Был» и «Пропуск» (пропуск без предупреждения оплачивается). «Перенос» и «Отмена» не начисляются.</div>
   </div>`;
 
+  wireScheduleSwitch();
   $('#wPrev').onclick = () => { weekAnchor = addDays(weekAnchor, -7); render(); };
   $('#wNext').onclick = () => { weekAnchor = addDays(weekAnchor, 7); render(); };
   $('#wNow').onclick = () => { weekAnchor = startOfWeek(new Date()); render(); };
@@ -1504,8 +1541,9 @@ function lessonModal(o) {
   const kindSel = $('#lKind');
   kindSel.onchange = () => { $('#lRef').innerHTML = targetOptions(kindSel.value, null); syncPrice(); };
   $('#lRef').onchange = syncPrice;
+  $('#lDur').oninput = syncPrice;
   function syncPrice() {
-    const p = defaultPriceFor(kindSel.value, $('#lRef').value);
+    const p = defaultPriceFor(kindSel.value, $('#lRef').value, +$('#lDur').value || 60);
     if (p) $('#lPrice').value = p;
   }
   if ($('#lPaid')) $('#lPaid').onchange = e => $('#lPaidWrap').classList.toggle('on', e.target.checked);
@@ -1544,7 +1582,7 @@ function lessonModal(o) {
    ========================================================= */
 function viewTpl() {
   const slots = DB.slots.filter(s => !s.archived).slice().sort((a, b) => a.wd === b.wd ? minutesOf(a.time) - minutesOf(b.time) : a.wd - b.wd);
-  const weekSum = slots.reduce((a, s) => a + (s.price || defaultPriceFor(s.kind, s.refId)), 0);
+  const weekSum = slots.reduce((a, s) => a + (s.price || defaultPriceFor(s.kind, s.refId, s.dur)), 0);
   const tax = DB.settings.taxRate || 0;
 
   let byDay = '';
@@ -1561,7 +1599,7 @@ function viewTpl() {
               ${subjBadge(s.subject)}
               <span class="lsn-name">${esc(targetName(s.kind, s.refId))}</span>
               <span class="muted small nowrap">${esc(targetGrade(s.kind, s.refId))}</span>
-              <span class="lsn-price">${money(s.price || defaultPriceFor(s.kind, s.refId))}</span>
+              <span class="lsn-price">${money(s.price || defaultPriceFor(s.kind, s.refId, s.dur))}</span>
             </div>
             <div class="lsn-bot">
               <span class="muted small">${s.dur || 60} мин${s.from ? ' · с ' + fmtDate(parseKey(s.from)) : ''}${s.to ? ' по ' + fmtDate(parseKey(s.to)) : ''}</span>
@@ -1577,9 +1615,12 @@ function viewTpl() {
 
   $('#app').innerHTML = `
   <div class="page-head">
-    <div><h2>Постоянные занятия</h2>
-      <div class="sub">Шаблон недели — по нему автоматически строится расписание на каждую неделю</div></div>
-    <button class="btn btn-primary" id="addSlot">+ Постоянное занятие</button>
+    <div><h2>Расписание</h2>
+      <div class="sub">Постоянные занятия — шаблон недели. По нему расписание строится само, каждую неделю</div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${scheduleSwitch()}
+      <button class="btn btn-primary btn-sm" id="addSlot">+ Постоянное занятие</button>
+    </div>
   </div>
   <div class="grid cols-4" style="margin-bottom:14px">
     <div class="stat"><div class="label">Занятий в неделю</div><div class="value">${slots.length}</div>
@@ -1593,6 +1634,7 @@ function viewTpl() {
   </div>
   <div class="days">${byDay}</div>`;
 
+  wireScheduleSwitch();
   $('#addSlot').onclick = () => slotModal(null, 0);
   $$('[data-add]').forEach(b => b.onclick = () => slotModal(null, +b.dataset.add));
   $$('[data-edit]').forEach(b => b.onclick = () => slotModal(slotOf(b.dataset.edit)));
@@ -1623,7 +1665,7 @@ function slotModal(s, wd) {
       <div class="row">
         <div class="field"><label>Предмет</label>
           <select id="sSubj">${['Ф', 'М', 'Ф,М'].map(x => `<option value="${x}" ${s && s.subject === x ? 'selected' : ''}>${subjLabel(x)}</option>`).join('')}</select></div>
-        <div class="field"><label>Стоимость, ₽</label><input type="number" id="sPrice" step="50" value="${s ? (s.price || defaultPriceFor(s.kind, s.refId)) : DB.settings.defaultPrice}"></div>
+        <div class="field"><label>Стоимость, ₽</label><input type="number" id="sPrice" step="50" value="${s ? (s.price || defaultPriceFor(s.kind, s.refId, s.dur)) : DB.settings.defaultPrice}"></div>
       </div>
       <div class="row">
         <div class="field"><label>Занимаемся с</label><input type="date" id="sFrom" value="${s && s.from ? s.from : todayKey()}"><span class="hint">С этой даты занятие появится в расписании</span></div>
@@ -1635,7 +1677,8 @@ function slotModal(s, wd) {
   const k = $('#sKind');
   k.onchange = () => { $('#sRef').innerHTML = targetOptions(k.value, null); sync(); };
   $('#sRef').onchange = sync;
-  function sync() { const p = defaultPriceFor(k.value, $('#sRef').value); if (p) $('#sPrice').value = p; }
+  $('#sDur').oninput = sync;
+  function sync() { const p = defaultPriceFor(k.value, $('#sRef').value, +$('#sDur').value || 60); if (p) $('#sPrice').value = p; }
 
   $('#sSave').onclick = () => {
     const ref = $('#sRef').value;
@@ -1690,7 +1733,6 @@ function viewStudents() {
         ${sl.length ? sl.map(x => '<span class="badge">🗓 ' + slotLine(x) + '</span>').join('') : '<span class="badge">без постоянного расписания</span>'}
         ${grp.map(g => '<span class="badge badge-g">👥 ' + esc(g.name) + '</span>').join('')}
       </div>
-      ${s.contact || s.parent ? `<div class="muted small">${s.contact ? '📱 ' + esc(s.contact) : ''} ${s.parent ? ' · 👪 ' + esc(s.parent) : ''}</div>` : ''}
       <div class="st-stats">
         <div><span class="muted">Занятий за месяц</span><b>${t.lessons}</b></div>
         <div><span class="muted">Начислено</span><b>${money(t.charged)}</b></div>
@@ -1735,7 +1777,8 @@ function studentModal(s) {
     <div class="modal-head"><h3>${isNew ? 'Новый ученик' : 'Ученик: ' + esc(s.name)}</h3><button class="close-x" data-close>×</button></div>
     <div class="modal-body">
       <div class="row">
-        <div class="field" style="flex:2 1 220px"><label>Имя</label><input type="text" id="nName" value="${s ? esc(s.name) : ''}" placeholder="Например, Захар"></div>
+        <div class="field" style="flex:2 1 220px"><label>Имя</label><input type="text" id="nName" value="${s ? esc(s.name) : ''}" placeholder="Например, Захар">
+          <span class="hint">Достаточно имени — фамилия не нужна</span></div>
         <div class="field"><label>Класс</label><input type="number" id="nGrade" min="1" max="11" value="${s && s.grade ? s.grade : ''}" placeholder="9"></div>
       </div>
       <div class="field"><label>Предметы</label>
@@ -1748,11 +1791,9 @@ function studentModal(s) {
         <div class="field"><label>Цель</label>
           <select id="nGoal">${['ЕГЭ', 'ОГЭ', 'Школа', 'Олимпиады', 'Другое'].map(g => `<option ${s && s.goal === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
       </div>
-      <div class="row">
-        <div class="field"><label>Контакт ученика</label><input type="text" id="nContact" value="${s ? esc(s.contact || '') : ''}" placeholder="@telegram / телефон"></div>
-        <div class="field"><label>Контакт родителя</label><input type="text" id="nParent" value="${s ? esc(s.parent || '') : ''}" placeholder="имя, телефон"></div>
-      </div>
-      <div class="field"><label>Заметки</label><textarea id="nNote" placeholder="Уровень, пробелы, о чём договорились…">${s ? esc(s.note || '') : ''}</textarea></div>
+      <div class="field"><label>Заметки по учёбе</label>
+        <textarea id="nNote" placeholder="Уровень, пробелы, о чём договорились…">${s ? esc(s.note || '') : ''}</textarea>
+        <span class="hint">Только про учёбу. Телефоны, фамилии и адреса в кабинете не храним — пусть остаются в телефоне.</span></div>
     </div>
     <div class="modal-foot">
       ${isNew ? '' : '<button class="btn btn-danger" id="nDel">Удалить</button>'}
@@ -1767,7 +1808,7 @@ function studentModal(s) {
       name: name, grade: +$('#nGrade').value || null,
       subjects: $$('.nSubj').filter(c => c.checked).map(c => c.value),
       price: +$('#nPrice').value || 0, goal: $('#nGoal').value,
-      contact: $('#nContact').value.trim(), parent: $('#nParent').value.trim(), note: $('#nNote').value.trim()
+      note: $('#nNote').value.trim()
     };
     if (isNew) DB.students.push(Object.assign({ id: 'u' + uid(), archived: false, created: todayKey() }, data));
     else Object.assign(s, data);
@@ -1802,7 +1843,6 @@ function studentCard(s) {
       </div>
       ${slotsOf('student', s.id).length ? '<div class="card-title" style="margin-bottom:6px">Постоянное расписание</div><div class="checks" style="margin-bottom:14px">'
       + slotsOf('student', s.id).map(x => '<span class="badge">🗓 ' + slotLine(x) + ' · ' + x.subject + ' · ' + money(x.price || 0) + '</span>').join('') + '</div>' : ''}
-      ${s.contact || s.parent ? '<div class="muted small" style="margin-bottom:12px">' + (s.contact ? '📱 ' + esc(s.contact) : '') + (s.parent ? ' · 👪 ' + esc(s.parent) : '') + '</div>' : ''}
       ${s.note ? '<div class="card" style="margin-bottom:14px;background:var(--surface-2)"><div class="card-title">Заметки</div><div class="small" style="margin-top:4px;white-space:pre-wrap">' + esc(s.note) + '</div></div>' : ''}
       <div class="card-title" style="margin-bottom:6px">История занятий</div>
       <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
@@ -1841,7 +1881,8 @@ function viewGroups() {
         <div class="avatar" style="background:${avatarColor(g.name)}">${esc(initials(g.name))}</div>
         <div style="flex:1;min-width:0"><div class="st-name">${esc(g.name)}</div>
           <div class="st-meta">${g.studentIds.length} ${plural(g.studentIds.length, 'ученик', 'ученика', 'учеников')} · ${subjLabel(g.subject || 'Ф')}</div></div>
-        <div class="nowrap" style="font-weight:700">${money(g.price || 0)}</div>
+        <div class="nowrap" style="text-align:right"><b>${money(rateFor('group', g.id))}</b>
+          <div class="muted small">${money(g.perStudent || 0)} с человека</div></div>
       </div>
       <div class="checks">${g.studentIds.map(id => { const s = student(id); return s ? '<span class="badge">' + esc(s.name) + (s.grade ? ' · ' + s.grade + ' кл.' : '') + '</span>' : ''; }).join('') || '<span class="badge">состав не задан</span>'}</div>
       <div class="checks">${sl.map(x => '<span class="badge">🗓 ' + slotLine(x) + '</span>').join('') || '<span class="badge">без расписания</span>'}</div>
@@ -1876,7 +1917,8 @@ function groupModal(g) {
     <div class="modal-body">
       <div class="row">
         <div class="field" style="flex:2 1 200px"><label>Название</label><input type="text" id="gName" value="${g ? esc(g.name) : ''}" placeholder="Например, Тим+Ксю"></div>
-        <div class="field"><label>Стоимость занятия, ₽</label><input type="number" id="gPrice" step="50" value="${g ? g.price : 2400}"><span class="hint">Общая сумма за занятие</span></div>
+        <div class="field"><label>Цена с человека, ₽ за час</label><input type="number" id="gPrice" step="50" value="${g && g.perStudent ? g.perStudent : DB.settings.groupPrice}">
+          <span class="hint" id="gTotal"></span></div>
       </div>
       <div class="field"><label>Предмет</label>
         <select id="gSubj">${['Ф', 'М', 'Ф,М'].map(x => `<option value="${x}" ${g && g.subject === x ? 'selected' : ''}>${subjLabel(x)}</option>`).join('')}</select></div>
@@ -1886,12 +1928,19 @@ function groupModal(g) {
       <div class="field"><label>Заметка</label><textarea id="gNote">${g ? esc(g.note || '') : ''}</textarea></div>
     </div>
     <div class="modal-foot"><button class="btn" data-close>Отмена</button><button class="btn btn-primary" id="gSave">Сохранить</button></div>`);
-  $$('.gSt').forEach(c => c.onchange = e => e.target.closest('.chk').classList.toggle('on', e.target.checked));
+  const gTotal = () => {
+    const n = $$('.gSt').filter(c => c.checked).length;
+    const per = +$('#gPrice').value || 0;
+    $('#gTotal').textContent = n ? n + ' × ' + money(per) + ' = ' + money(per * n) + ' за занятие' : 'Отметьте состав группы ниже';
+  };
+  $$('.gSt').forEach(c => c.onchange = e => { e.target.closest('.chk').classList.toggle('on', e.target.checked); gTotal(); });
+  $('#gPrice').oninput = gTotal;
+  gTotal();
   $('#gSave').onclick = () => {
     const name = $('#gName').value.trim();
     if (!name) { toast('Введите название группы'); return; }
     const data = {
-      name: name, price: +$('#gPrice').value || 0, subject: $('#gSubj').value,
+      name: name, perStudent: +$('#gPrice').value || 0, subject: $('#gSubj').value,
       studentIds: $$('.gSt').filter(c => c.checked).map(c => c.value), note: $('#gNote').value.trim()
     };
     if (isNew) DB.groups.push(Object.assign({ id: 'g' + uid(), archived: false }, data));
@@ -2013,11 +2062,11 @@ function exportOcc(list, filename) {
 }
 
 function exportStudentsCsv() {
-  const head = ['Имя', 'Класс', 'Предметы', 'Цена', 'Цель', 'Контакт', 'Родитель', 'Расписание', 'Занятий за месяц', 'Начислено за месяц', 'Долг за месяц', 'Заметка'];
+  const head = ['Имя', 'Класс', 'Предметы', 'Цена', 'Цель', 'Расписание', 'Занятий за месяц', 'Начислено за месяц', 'Долг за месяц', 'Заметка'];
   const rows = DB.students.map(s => {
     const t = studentStats(s.id);
     return [s.name, s.grade || '', (s.subjects || []).join('+'), s.price || DB.settings.defaultPrice, s.goal || '',
-    s.contact || '', s.parent || '', slotsOf('student', s.id).map(slotLine).join(' / '), t.lessons, t.charged, t.debt, (s.note || '').replace(/\s+/g, ' ')];
+    slotsOf('student', s.id).map(slotLine).join(' / '), t.lessons, t.charged, t.debt, (s.note || '').replace(/\s+/g, ' ')];
   });
   const csv = [head].concat(rows).map(r => r.map(c => {
     const v = String(c == null ? '' : c); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
@@ -2039,8 +2088,11 @@ function viewSettings() {
       <div class="card-head"><div><div class="card-title">Основное</div><div class="card-sub">Подставляется по умолчанию в новые занятия</div></div></div>
       <div class="field"><label>Ваше имя</label><input type="text" id="cfOwner" value="${esc(s.owner)}"></div>
       <div class="row">
-        <div class="field"><label>Цена занятия по умолчанию, ₽</label><input type="number" id="cfPrice" step="50" value="${s.defaultPrice}"></div>
-        <div class="field"><label>Желаемая цена, ₽</label><input type="number" id="cfWish" step="50" value="${s.wishPrice}"><span class="hint">Для сравнения «желаем / факт»</span></div>
+        <div class="field"><label>Индивидуальное занятие, ₽ за час</label><input type="number" id="cfPrice" step="50" value="${s.defaultPrice}"></div>
+        <div class="field"><label>Групповое, ₽ за час с человека</label><input type="number" id="cfGroup" step="50" value="${s.groupPrice}"><span class="hint">Группа из двоих за час = ${money(s.groupPrice * 2)}</span></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Желаемая цена, ₽ за час</label><input type="number" id="cfWish" step="50" value="${s.wishPrice}"><span class="hint">Для сравнения «желаем / факт» на дашборде</span></div>
       </div>
       <div class="row">
         <div class="field"><label>Налог, %</label><input type="number" id="cfTax" step="0.5" min="0" max="50" value="${s.taxRate}"><span class="hint">НПД: 4% с физлиц, 6% с юрлиц</span></div>
@@ -2092,6 +2144,7 @@ function viewSettings() {
         <button class="btn" id="loadDemo">Загрузить пример</button>
         <button class="btn btn-danger" id="clearAll">Удалить все данные</button>
       </div>
+      <div class="list-line"><div class="grow muted small">Версия кабинета</div><b class="small">${APP_VERSION}</b></div>
       <div class="muted small" style="margin-top:10px">${cloudOn()
       ? 'Данные хранятся в облаке и синхронизируются между всеми устройствами. Резервная копия — на случай, если захотите откатиться.'
       : 'Файл работает офлайн, данные живут в браузере этого компьютера. Делайте копию раз в месяц.'}</div>
@@ -2113,6 +2166,7 @@ function viewSettings() {
   $('#cfSave').onclick = () => {
     s.owner = $('#cfOwner').value.trim() || 'Репетитор';
     s.defaultPrice = +$('#cfPrice').value || 0;
+    s.groupPrice = +$('#cfGroup').value || 0;
     s.wishPrice = +$('#cfWish').value || 0;
     s.taxRate = +$('#cfTax').value || 0;
     s.workGoal = +$('#cfGoal').value || 25;
@@ -2170,13 +2224,13 @@ function viewSettings() {
    ========================================================= */
 function seedDemo() {
   const mk = (o) => Object.assign({ id: 'u' + uid(), archived: false, created: todayKey(), subjects: ['Ф'], price: 1500 }, o);
-  const vova = mk({ name: 'Вова', grade: 9, subjects: ['Ф'], goal: 'ОГЭ', contact: '@vova', price: 1500 });
+  const vova = mk({ name: 'Вова', grade: 9, subjects: ['Ф'], goal: 'ОГЭ', price: 1500 });
   const vasya = mk({ name: 'Вася', grade: 10, subjects: ['Ф'], goal: 'ЕГЭ', price: 1500 });
   const ilya = mk({ name: 'Илья', grade: 9, subjects: ['М'], goal: 'ОГЭ', price: 1500 });
   const tim = mk({ name: 'Тимофей', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: 1200 });
   const ksu = mk({ name: 'Ксюша', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: 1200 });
   DB.students = [vova, vasya, ilya, tim, ksu];
-  const grp = { id: 'g' + uid(), name: 'Тим + Ксю', price: 2400, subject: 'М', studentIds: [tim.id, ksu.id], note: 'Готовимся к профильной математике', archived: false };
+  const grp = { id: 'g' + uid(), name: 'Тим + Ксю', perStudent: 1200, subject: 'М', studentIds: [tim.id, ksu.id], note: 'Готовимся к профильной математике', archived: false };
   DB.groups = [grp];
   const start = key(addDays(new Date(), -42));
   const S = (kind, refId, wd, time, subject, price) => ({ id: 's' + uid(), kind, refId, wd, time, subject, price, dur: 60, from: start, to: null, archived: false });
@@ -2205,7 +2259,7 @@ function seedDemo() {
 /* =========================================================
    РОУТЕР И ЗАПУСК
    ========================================================= */
-const VIEWS = { dash: viewDash, week: viewWeek, tpl: viewTpl, students: viewStudents, groups: viewGroups, money: viewMoney, settings: viewSettings };
+const VIEWS = { dash: viewDash, week: viewSchedule, students: viewStudents, groups: viewGroups, money: viewMoney, settings: viewSettings };
 
 function render() {
   $$('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.view === VIEW));
