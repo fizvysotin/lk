@@ -522,7 +522,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '2.0 · 20 августа 2026, 03:40';
+const APP_VERSION = '2.1 · 20 августа 2026, 04:20';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -858,8 +858,10 @@ async function api(path, opts, retry) {
   }
   const h = Object.assign({}, opts.headers || {});
   h.apikey = CLOUD.key;
-  // raw: тело уходит как есть (файл), Content-Type не навязываем
-  if (!opts.raw && !h['Content-Type']) h['Content-Type'] = 'application/json';
+  // Content-Type ставим только когда тело действительно есть:
+  // запрос без тела, но с заголовком JSON, сервер хранилища отвергает.
+  // raw — тело уходит как есть (файл), тип не навязываем.
+  if (!opts.raw && opts.body != null && !h['Content-Type']) h['Content-Type'] = 'application/json';
   if (AUTH.s) h.Authorization = 'Bearer ' + AUTH.s.access_token;
   const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h }));
   if (r.status === 401 && !retry) {
@@ -1994,7 +1996,12 @@ async function fileLink(key) {
 
 async function fileDelete(key) {
   const r = await api('/storage/v1/object/' + BUCKET + '/' + encPath(storagePath(key)), { method: 'DELETE' });
-  if (!r.ok) throw new Error('Не удалось удалить файл');
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    let msg = '';
+    try { const j = JSON.parse(t); msg = j.message || j.error || ''; } catch (e) { msg = t; }
+    throw new Error('Не удалось удалить файл: ' + (msg || 'ошибка ' + r.status).slice(0, 120));
+  }
   DB.files = fileMap().filter(f => f.k !== key);
   save();
 }
