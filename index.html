@@ -485,7 +485,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '1.5 · 20 августа 2026, 00:35';
+const APP_VERSION = '1.6 · 20 августа 2026, 01:05';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -542,7 +542,6 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
 let DB = null;
 let VIEW = 'dash';
 let weekAnchor = startOfWeek(new Date());
-let schedMode = 'week';   // 'week' — отметки, 'tpl' — постоянные занятия
 let dashMonth = todayKey().slice(0, 7);
 
 function defaultDB() {
@@ -1385,18 +1384,6 @@ function lessonCard(o) {
   </div>`;
 }
 
-/** Переключатель «Неделя / Постоянные занятия» — общий для обоих режимов */
-function scheduleSwitch() {
-  return `<div class="seg-switch" id="schedSwitch">
-    <button data-mode="week" class="${schedMode === 'week' ? 'on' : ''}">🗓 Неделя</button>
-    <button data-mode="tpl" class="${schedMode === 'tpl' ? 'on' : ''}">🔁 Постоянные</button>
-  </div>`;
-}
-function wireScheduleSwitch() {
-  $$('#schedSwitch button').forEach(b => b.onclick = () => { schedMode = b.dataset.mode; render(); });
-}
-function viewSchedule() { return schedMode === 'tpl' ? viewTpl() : viewWeek(); }
-
 function viewWeek() {
   const from = key(weekAnchor), to = key(addDays(weekAnchor, 6));
   const occ = occurrences(from, to);
@@ -1418,9 +1405,11 @@ function viewWeek() {
         ${list.length ? list.map(lessonCard).join('') : '<div class="day-empty">Свободный день</div>'}
       </div>
       <div class="day-foot">
-        <span>${dt.lessons ? dt.lessons + ' ' + plural(dt.lessons, 'занятие', 'занятия', 'занятий') : list.length + ' в плане'}</span>
-        <span>${dt.charged ? money(dt.charged) : ''}
-          ${list.length ? '<button class="btn btn-sm btn-ghost" data-allday="' + k + '" title="Отметить все занятия дня как проведённые">✓ все</button>' : ''}</span>
+        <span>${dt.charged ? money(dt.charged) : (list.length ? list.length + ' в плане' : '')}</span>
+        <span>
+          ${list.length ? '<button class="btn btn-sm btn-ghost" data-allday="' + k + '" title="Отметить все занятия дня как проведённые">✓ все</button>' : ''}
+          <button class="btn btn-sm btn-ghost" data-addslot="${i}" data-from="${k}" title="Добавить занятие по ${DAYS_FULL[i].toLowerCase()}м">+ добавить</button>
+        </span>
       </div>
     </div>`;
   }
@@ -1428,9 +1417,9 @@ function viewWeek() {
   $('#app').innerHTML = `
   <div class="page-head">
     <div><h2>Расписание</h2>
-      <div class="sub">Отмечайте посещаемость и оплату прямо в карточке занятия</div></div>
+      <div class="sub">Занятия повторяются каждую неделю. Отмечайте посещаемость и оплату прямо в карточке</div></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      ${scheduleSwitch()}
+      <button class="btn btn-primary btn-sm" id="addSlotTop">+ Занятие</button>
       <button class="btn btn-sm" id="expWeek">⬇ CSV</button>
     </div>
   </div>
@@ -1465,11 +1454,12 @@ function viewWeek() {
     <div class="muted small" style="margin-top:8px">Деньги начисляются за статусы «Был» и «Пропуск» (пропуск без предупреждения оплачивается). «Перенос» и «Отмена» не начисляются.</div>
   </div>`;
 
-  wireScheduleSwitch();
   $('#wPrev').onclick = () => { weekAnchor = addDays(weekAnchor, -7); render(); };
   $('#wNext').onclick = () => { weekAnchor = addDays(weekAnchor, 7); render(); };
   $('#wNow').onclick = () => { weekAnchor = startOfWeek(new Date()); render(); };
   $('#expWeek').onclick = () => exportOcc(occ, 'raspisanie_' + from + '_' + to + '.csv');
+  $('#addSlotTop').onclick = () => slotModal(null, wdIdx(new Date()), todayKey());
+  $$('[data-addslot]').forEach(b => b.onclick = () => slotModal(null, +b.dataset.addslot, b.dataset.from));
 
   $$('[data-allday]').forEach(b => b.onclick = () => {
     const k = b.dataset.allday;
@@ -1523,6 +1513,15 @@ function lessonModal(o) {
       <label class="chk ${o.paid ? 'on' : ''}" id="lPaidWrap"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>
       <div class="field" style="margin-top:12px"><label>Заметка к занятию</label>
         <textarea id="lNote" placeholder="Что прошли, что задать к следующему разу…">${esc(o.note)}</textarea></div>
+
+      <div class="card" style="background:var(--surface-2);margin-top:16px;box-shadow:none">
+        <div class="card-title">Постоянное занятие</div>
+        <div class="muted small" style="margin:3px 0 10px">Повторяется каждую неделю: ${DAYS_FULL[wdIdx(d)].toLowerCase()}, ${esc(slotOf(o.slotId) ? slotOf(o.slotId).time : o.time)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="lEditSlot">Изменить расписание</button>
+          <button class="btn btn-sm btn-danger" id="lDelSlot">Убрать из расписания</button>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn" data-close>Отмена</button>
@@ -1530,6 +1529,12 @@ function lessonModal(o) {
     </div>`);
 
   $('#lPaid').onchange = e => $('#lPaidWrap').classList.toggle('on', e.target.checked);
+  $('#lEditSlot').onclick = () => { closeModal(); slotModal(slotOf(o.slotId)); };
+  $('#lDelSlot').onclick = () => confirmBox('Убрать «' + targetName(o.kind, o.refId) + '» из расписания по '
+    + DAYS_FULL[wdIdx(d)].toLowerCase() + 'м? Отметки за прошедшие недели сохранятся в отчётах, но занятие пропадёт из расписания.', () => {
+      DB.slots = DB.slots.filter(x => x.id !== o.slotId);
+      save(); closeModal(); render(true); toast('Убрано из расписания');
+    }, 'Убрать');
   $('#lSave').onclick = () => {
     setMark(o.id, {
       st: $('#lSt').value, paid: $('#lPaid').checked, note: $('#lNote').value,
@@ -1539,79 +1544,11 @@ function lessonModal(o) {
   };
 }
 
-/* =========================================================
-   ПОСТОЯННОЕ РАСПИСАНИЕ (шаблон)
-   ========================================================= */
-function viewTpl() {
-  const slots = DB.slots.filter(s => !s.archived).slice().sort((a, b) => a.wd === b.wd ? minutesOf(a.time) - minutesOf(b.time) : a.wd - b.wd);
-  const weekSum = slots.reduce((a, s) => a + (s.price || defaultPriceFor(s.kind, s.refId, s.dur)), 0);
-  const tax = DB.settings.taxRate || 0;
 
-  let byDay = '';
-  for (let i = 0; i < 7; i++) {
-    const list = slots.filter(s => s.wd === i);
-    byDay += `
-    <div class="day">
-      <div class="day-head"><span>${DAYS_FULL[i]}</span><span class="date">${list.length}</span></div>
-      <div class="day-body">
-        ${list.length ? list.map(s => `
-          <div class="lsn s-plan">
-            <div class="lsn-top">
-              <span class="lsn-time">${esc(s.time)}</span>
-              ${subjBadge(s.subject)}
-              <span class="lsn-name">${esc(targetName(s.kind, s.refId))}</span>
-              <span class="muted small nowrap">${esc(targetGrade(s.kind, s.refId))}</span>
-              <span class="lsn-price">${money(s.price || defaultPriceFor(s.kind, s.refId, s.dur))}</span>
-            </div>
-            <div class="lsn-bot">
-              <span class="muted small">${s.dur || 60} мин${s.from ? ' · с ' + fmtDate(parseKey(s.from)) : ''}${s.to ? ' по ' + fmtDate(parseKey(s.to)) : ''}</span>
-              <button class="btn btn-sm btn-ghost" style="margin-left:auto" data-edit="${s.id}">Изменить</button>
-              <button class="btn btn-sm btn-ghost" data-del="${s.id}">✕</button>
-            </div>
-          </div>`).join('') : '<div class="day-empty">Нет занятий</div>'}
-      </div>
-      <div class="day-foot"><span>${list.length ? list.reduce((a, s) => a + (s.dur || 60), 0) / 60 + ' ч' : ''}</span>
-        <span><button class="btn btn-sm btn-ghost" data-add="${i}">+ добавить</button></span></div>
-    </div>`;
-  }
-
-  $('#app').innerHTML = `
-  <div class="page-head">
-    <div><h2>Расписание</h2>
-      <div class="sub">Постоянные занятия — шаблон недели. По нему расписание строится само, каждую неделю</div></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      ${scheduleSwitch()}
-      <button class="btn btn-primary btn-sm" id="addSlot">+ Постоянное занятие</button>
-    </div>
-  </div>
-  <div class="grid cols-4" style="margin-bottom:14px">
-    <div class="stat"><div class="label">Занятий в неделю</div><div class="value">${slots.length}</div>
-      <div class="delta">${Math.round(slots.reduce((a, s) => a + (s.dur || 60), 0) / 60 * 10) / 10} часов</div></div>
-    <div class="stat"><div class="label">Потенциал недели</div><div class="value">${moneyShort(weekSum)}<small> ₽</small></div>
-      <div class="delta">если все занятия состоятся</div></div>
-    <div class="stat"><div class="label">Потенциал месяца</div><div class="value">${moneyShort(weekSum * 4)}<small> ₽</small></div>
-      <div class="delta">чистыми ${money(Math.round(weekSum * 4 * (100 - tax) / 100))}</div></div>
-    <div class="stat"><div class="label">Учеников в работе</div><div class="value">${activeStudents().length}</div>
-      <div class="delta">${DB.groups.filter(g => !g.archived).length} ${plural(DB.groups.length, 'группа', 'группы', 'групп')}</div></div>
-  </div>
-  <div class="days">${byDay}</div>`;
-
-  wireScheduleSwitch();
-  $('#addSlot').onclick = () => slotModal(null, 0);
-  $$('[data-add]').forEach(b => b.onclick = () => slotModal(null, +b.dataset.add));
-  $$('[data-edit]').forEach(b => b.onclick = () => slotModal(slotOf(b.dataset.edit)));
-  $$('[data-del]').forEach(b => b.onclick = () => {
-    const s = slotOf(b.dataset.del);
-    confirmBox('Удалить постоянное занятие «' + targetName(s.kind, s.refId) + '» (' + DAYS_SHORT[s.wd] + ' ' + s.time + ')? Отметки за прошлые недели сохранятся, но пропадут из расписания.', () => {
-      DB.slots = DB.slots.filter(x => x.id !== s.id); save(); render(); toast('Удалено');
-    });
-  });
-}
-
-function slotModal(s, wd) {
+function slotModal(s, wd, fromDate) {
   const isNew = !s;
   openModal(`
-    <div class="modal-head"><h3>${isNew ? 'Новое постоянное занятие' : 'Постоянное занятие'}</h3><button class="close-x" data-close>×</button></div>
+    <div class="modal-head"><h3>${isNew ? 'Новое занятие в расписании' : 'Занятие в расписании'}</h3><button class="close-x" data-close>×</button></div>
     <div class="modal-body">
       <div class="row">
         <div class="field"><label>Кто занимается</label>
@@ -1630,7 +1567,7 @@ function slotModal(s, wd) {
         <div class="field"><label>Стоимость, ₽</label><input type="number" id="sPrice" step="50" value="${s ? (s.price || defaultPriceFor(s.kind, s.refId, s.dur)) : DB.settings.defaultPrice}"></div>
       </div>
       <div class="row">
-        <div class="field"><label>Занимаемся с</label><input type="date" id="sFrom" value="${s && s.from ? s.from : todayKey()}"><span class="hint">С этой даты занятие появится в расписании</span></div>
+        <div class="field"><label>Занимаемся с</label><input type="date" id="sFrom" value="${s && s.from ? s.from : (fromDate || todayKey())}"><span class="hint">С этой даты занятие появится в расписании</span></div>
         <div class="field"><label>По (необязательно)</label><input type="date" id="sTo" value="${s && s.to ? s.to : ''}"><span class="hint">Например, до конца учебного года</span></div>
       </div>
     </div>
@@ -2241,7 +2178,7 @@ function clearMarks() {
 /* =========================================================
    РОУТЕР И ЗАПУСК
    ========================================================= */
-const VIEWS = { dash: viewDash, week: viewSchedule, students: viewStudents, groups: viewGroups, money: viewMoney, settings: viewSettings };
+const VIEWS = { dash: viewDash, week: viewWeek, students: viewStudents, groups: viewGroups, money: viewMoney, settings: viewSettings };
 
 let pendingRender = false;
 /** Пока пользователь печатает в поле — страницу не перерисовываем, иначе теряется фокус */
