@@ -168,6 +168,14 @@ a{color:var(--brand)}
 /* карточки учеников и групп: одиночная карточка не растягивается на всю ширину */
 .cards{display:grid;gap:14px;align-items:start;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
 .section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 9px 2px}
+.soc{
+  display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);text-decoration:none;color:var(--ink);background:var(--surface);
+  transition:border-color .15s,background .15s;
+}
+.soc:hover{border-color:var(--brand);background:var(--brand-soft)}
+.soc-ic{font-size:20px;line-height:1}
+.soc b{font-weight:650}
 
 /* ============ BUTTONS / FORMS ============ */
 .btn{
@@ -447,10 +455,9 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
   <div class="wrap banner-inner">
     <div>
       <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <span class="brand-badge">90+<br>баллов</span>
         <div>
-          <div class="brand-title">ЕГЭ / ОГЭ по физике</div>
-          <div class="brand-sub">Личный кабинет репетитора · учёт занятий, оплат и дохода</div>
+          <div class="brand-title">ЕГЭ / ОГЭ по физике/математике</div>
+          <div class="brand-sub">Личный кабинет репетитора</div>
         </div>
       </div>
       <div class="brand-tutor">🎓 Репетитор: <b id="ownerName">Юрий Высотин</b></div>
@@ -470,6 +477,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
     <button class="tab" data-view="week"><span class="ic">🗓</span>Расписание</button>
     <button class="tab" data-view="students"><span class="ic">🧑‍🎓</span>Ученики и группы</button>
     <button class="tab" data-view="money"><span class="ic">💸</span>Оплаты и долги</button>
+    <button class="tab" data-view="mat"><span class="ic">📚</span>Материалы</button>
     <button class="tab" data-view="settings"><span class="ic">⚙️</span>Настройки</button>
   </div>
 </nav>
@@ -487,7 +495,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '1.7 · 20 августа 2026, 01:25';
+const APP_VERSION = '1.8 · 20 августа 2026, 02:00';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -575,7 +583,6 @@ function loadLocal() {
     if (raw) { DB = normalizeDB(JSON.parse(raw)); return; }
   } catch (e) { console.warn('Не удалось прочитать данные', e); }
   DB = defaultDB();
-  seedDemo();
   writeCache();
 }
 let saveTimer = null;
@@ -965,8 +972,8 @@ function showAuth(msg) {
   el.classList.remove('hidden');
   el.innerHTML = `
     <form class="auth-card" id="authForm">
-      <div class="auth-logo"><span class="brand-badge">90+<br>баллов</span>
-        <div><div class="auth-title">ЕГЭ / ОГЭ по физике</div>
+      <div class="auth-logo">
+        <div><div class="auth-title">ЕГЭ / ОГЭ по физике/математике</div>
         <div class="auth-sub">Личный кабинет репетитора</div></div></div>
       <div class="field"><label>Почта</label><input type="email" id="aEmail" autocomplete="username" required placeholder="you@example.com"></div>
       <div class="field"><label>Пароль</label><input type="password" id="aPass" autocomplete="current-password" required placeholder="••••••••"></div>
@@ -1204,9 +1211,7 @@ function viewDash() {
     </ol>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" data-go="students">Добавить ученика</button>
-      <button class="btn" id="dashDemo">Заполнить моим расписанием</button>
     </div>
-    <div class="muted small" style="margin-top:8px">Вторая кнопка сразу заведёт Вову, Васю, Илью и группу «Тим + Ксю» с их днями и временем — дальше только поправите цены.</div>
   </div>` : ''}
 
   <div class="grid cols-4" style="margin-bottom:14px">
@@ -1354,9 +1359,6 @@ function viewDash() {
       <span class="num nowrap">${money(o.price)}</span>
     </div>`).join('') : '<div class="empty small">Сегодня занятий нет — можно выдохнуть 🙂</div>';
 
-  if ($('#dashDemo')) $('#dashDemo').onclick = () => {
-    seedDemo(); save(); render(true); toast('Готово — проверьте цены в карточках учеников');
-  };
   $('#mPrev').onclick = () => { dashMonth = key(new Date(y, m - 2, 1)).slice(0, 7); render(); };
   $('#mNext').onclick = () => { dashMonth = key(new Date(y, m, 1)).slice(0, 7); render(); };
 }
@@ -1379,7 +1381,8 @@ function lessonCard(o) {
         ${['done', 'miss', 'move', 'cancel'].map(s =>
     `<button data-s="${s}" class="${o.st === s ? 'on' : ''}" title="${STATUS[s].label}" data-act="st">${STATUS[s].icon}</button>`).join('')}
       </span>
-      <button class="pay-btn ${o.paid ? 'on' : ''}" data-act="pay" title="${paidTitle}">₽ ${o.paid ? 'оплачено' : 'не опл.'}</button>
+      ${o.st === 'move' || o.st === 'cancel' ? '<span class="muted small">не оплачивается</span>'
+      : `<button class="pay-btn ${o.paid ? 'on' : ''}" data-act="pay" title="${paidTitle}">₽ ${o.paid ? 'оплачено' : 'не опл.'}</button>`}
       ${o.note ? '<span class="badge" title="' + esc(o.note) + '">📝</span>' : ''}
       <button class="lsn-more" data-act="more" title="Подробнее">⋮</button>
     </div>
@@ -1477,7 +1480,9 @@ function viewWeek() {
       const o = occ.find(x => x.id === id); if (!o) return;
       if (act === 'st') {
         const s = b.dataset.s;
-        setMark(id, { st: o.st === s ? 'plan' : s });
+        const next = o.st === s ? 'plan' : s;
+        // перенос и отмена не оплачиваются — снимаем галочку оплаты, чтобы не путала
+        setMark(id, (next === 'move' || next === 'cancel') ? { st: next, paid: false } : { st: next });
         render();
       } else if (act === 'pay') {
         setMark(id, { paid: !o.paid });
@@ -1512,7 +1517,8 @@ function lessonModal(o) {
       </div>
       <div class="field"><label>Статус</label>
         <select id="lSt">${Object.keys(STATUS).map(s => `<option value="${s}" ${o.st === s ? 'selected' : ''}>${STATUS[s].icon} ${STATUS[s].label}</option>`).join('')}</select></div>
-      <label class="chk ${o.paid ? 'on' : ''}" id="lPaidWrap"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>
+      <label class="chk ${o.paid ? 'on' : ''} ${o.st === 'move' || o.st === 'cancel' ? 'hidden' : ''}" id="lPaidWrap"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>
+      <div class="muted small ${o.st === 'move' || o.st === 'cancel' ? '' : 'hidden'}" id="lNoPay">Перенос и отмена не оплачиваются</div>
       <div class="field" style="margin-top:12px"><label>Заметка к занятию</label>
         <textarea id="lNote" placeholder="Что прошли, что задать к следующему разу…">${esc(o.note)}</textarea></div>
 
@@ -1531,6 +1537,12 @@ function lessonModal(o) {
     </div>`);
 
   $('#lPaid').onchange = e => $('#lPaidWrap').classList.toggle('on', e.target.checked);
+  $('#lSt').onchange = e => {
+    const free = e.target.value === 'move' || e.target.value === 'cancel';
+    $('#lPaidWrap').classList.toggle('hidden', free);
+    $('#lNoPay').classList.toggle('hidden', !free);
+    if (free) { $('#lPaid').checked = false; $('#lPaidWrap').classList.remove('on'); }
+  };
   $('#lEditSlot').onclick = () => { closeModal(); slotModal(slotOf(o.slotId)); };
   $('#lDelSlot').onclick = () => confirmBox('Убрать «' + targetName(o.kind, o.refId) + '» из расписания по '
     + DAYS_FULL[wdIdx(d)].toLowerCase() + 'м? Отметки за прошедшие недели сохранятся в отчётах, но занятие пропадёт из расписания.', () => {
@@ -1655,8 +1667,9 @@ function studentCardHtml(s) {
       <div class="nowrap" style="font-weight:700">${money(s.price || DB.settings.defaultPrice)}</div>
     </div>
     <div class="checks">
-      ${sl.length ? sl.map(x => '<span class="badge">🗓 ' + slotLine(x) + '</span>').join('') : '<span class="badge">без постоянного расписания</span>'}
-      ${grp.map(g => '<span class="badge badge-g">👥 ' + esc(g.name) + '</span>').join('')}
+      ${sl.length ? sl.map(x => '<span class="badge">🗓 ' + slotLine(x) + '</span>').join('')
+      : (grp.length ? '' : '<span class="badge">без постоянного расписания</span>')}
+      ${grp.map(g => '<span class="badge badge-g">👥 Занятия в группе «' + esc(g.name) + '»</span>').join('')}
     </div>
     <div class="st-stats">
       <div><span class="muted">Занятий за месяц</span><b>${t.lessons}</b></div>
@@ -1860,6 +1873,181 @@ function groupModal(g) {
   };
 }
 /* =========================================================
+   МАТЕРИАЛЫ: банки заданий, соцсети и свои файлы
+   Файлы лежат в приватном хранилище Supabase, папка = ваш id.
+   ========================================================= */
+const BUCKET = 'materials';
+
+const BANKS = [
+  { name: 'Открытый банк заданий ЕГЭ (ФИПИ)', url: 'https://ege.fipi.ru/bank/', note: 'Официальные задания ЕГЭ по всем предметам' },
+  { name: 'Открытый банк заданий ОГЭ (ФИПИ)', url: 'https://oge.fipi.ru/bank/', note: 'Официальные задания ОГЭ по всем предметам' }
+];
+
+const SOCIAL = [
+  { name: 'Telegram', url: 'https://t.me/fizVysotin', icon: '✈️' },
+  { name: 'ВКонтакте', url: 'https://vk.com/fizvysotin', icon: '🅥' },
+  { name: 'YouTube', url: 'https://youtube.com/@fizvysotin', icon: '▶️' },
+  { name: 'RuTube', url: 'https://rutube.ru/channel/79660977', icon: '📺' },
+  { name: 'TikTok', url: 'https://tiktok.com/@fizvysotin', icon: '🎵' },
+  { name: 'Instagram', url: 'https://instagram.com/fizvysotin', icon: '📷' },
+  { name: 'Threads', url: 'https://www.threads.com/@fizvysotin', icon: '🧵' }
+];
+
+/* ---------- работа с хранилищем ---------- */
+function storagePath(name) { return AUTH.uid() + '/' + name; }
+function encPath(name) { return name.split('/').map(encodeURIComponent).join('/'); }
+
+async function filesList() {
+  const r = await api('/storage/v1/object/list/' + BUCKET, {
+    method: 'POST',
+    body: JSON.stringify({ prefix: AUTH.uid() + '/', limit: 200, offset: 0, sortBy: { column: 'name', order: 'asc' } })
+  });
+  if (!r.ok) throw new Error('list ' + r.status);
+  const rows = await r.json();
+  return (rows || []).filter(x => x.name && x.id);
+}
+
+async function fileUpload(file) {
+  const path = encPath(storagePath(file.name));
+  const h = { apikey: CLOUD.key, Authorization: 'Bearer ' + AUTH.s.access_token, 'x-upsert': 'true' };
+  if (file.type) h['Content-Type'] = file.type;
+  const r = await fetch(CLOUD.url + '/storage/v1/object/' + BUCKET + '/' + path, { method: 'POST', headers: h, body: file });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    if (r.status === 413 || /maximum allowed size|too large/i.test(t)) throw new Error('Файл слишком большой — до 50 МБ');
+    throw new Error('Не удалось загрузить файл (' + r.status + ')');
+  }
+}
+
+async function fileLink(name) {
+  const r = await api('/storage/v1/object/sign/' + BUCKET + '/' + encPath(storagePath(name)), {
+    method: 'POST', body: JSON.stringify({ expiresIn: 3600 })
+  });
+  if (!r.ok) throw new Error('Не удалось получить ссылку');
+  const j = await r.json();
+  return CLOUD.url + '/storage/v1' + j.signedURL;
+}
+
+async function fileDelete(name) {
+  const r = await api('/storage/v1/object/' + BUCKET + '/' + encPath(storagePath(name)), { method: 'DELETE' });
+  if (!r.ok) throw new Error('Не удалось удалить файл');
+}
+
+const fileSize = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : Math.max(1, Math.round(b / 1024)) + ' КБ';
+const fileIcon = n => {
+  const e = String(n).split('.').pop().toLowerCase();
+  if (e === 'pdf') return '📕';
+  if (['doc', 'docx', 'rtf', 'odt'].includes(e)) return '📘';
+  if (['xls', 'xlsx', 'csv'].includes(e)) return '📗';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(e)) return '🖼';
+  if (['zip', 'rar', '7z'].includes(e)) return '🗜';
+  return '📄';
+};
+
+/* ---------- экран ---------- */
+let matFiles = null, matError = '';
+
+function viewMaterials() {
+  $('#app').innerHTML = `
+  <div class="page-head">
+    <div><h2>Материалы</h2><div class="sub">Банки заданий, ваши файлы и ссылки на соцсети</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Мои файлы</div>
+      <div class="card-sub">Формулы, конспекты, подборки задач — хранятся в вашем облаке, доступны с любого устройства</div></div>
+      ${cloudOn() ? '<button class="btn btn-primary btn-sm" id="fUpBtn">⬆ Загрузить файлы</button>' : ''}
+    </div>
+    <input type="file" id="fInput" multiple class="hidden">
+    <div id="fList"><div class="muted small">Загружаю список…</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Банки заданий</div>
+      <div class="card-sub">Официальные открытые банки ФИПИ</div></div></div>
+    ${BANKS.map(b => `<div class="list-line">
+      <span style="font-size:18px">🏛</span>
+      <div class="grow"><a href="${b.url}" target="_blank" rel="noopener" style="font-weight:600">${esc(b.name)}</a>
+        <div class="muted small">${esc(b.note)}</div></div>
+      <a class="btn btn-sm" href="${b.url}" target="_blank" rel="noopener">Открыть</a>
+    </div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Мои соцсети</div>
+      <div class="card-sub">Ссылки под рукой — удобно скинуть ученику или родителю</div></div></div>
+    <div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">
+      ${SOCIAL.map(s => `<a class="soc" href="${s.url}" target="_blank" rel="noopener">
+        <span class="soc-ic">${s.icon}</span>
+        <span><b>${esc(s.name)}</b><br><span class="muted small">${esc(s.url.replace(/^https?:\/\//, ''))}</span></span>
+      </a>`).join('')}
+    </div>
+  </div>`;
+
+  if (cloudOn()) {
+    $('#fUpBtn').onclick = () => $('#fInput').click();
+    $('#fInput').onchange = async e => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      $('#fList').innerHTML = '<div class="muted small">Загружаю ' + files.length + ' ' + plural(files.length, 'файл', 'файла', 'файлов') + '…</div>';
+      for (const f of files) {
+        try { await fileUpload(f); }
+        catch (ex) { toast(f.name + ': ' + ex.message); }
+      }
+      matFiles = null;
+      toast('Готово');
+      loadFiles();
+    };
+    loadFiles();
+  } else {
+    $('#fList').innerHTML = '<div class="empty small">Хранилище файлов работает только в онлайн-версии кабинета</div>';
+  }
+}
+
+async function loadFiles() {
+  const box = $('#fList'); if (!box) return;
+  try {
+    matFiles = await filesList();
+  } catch (e) {
+    box.innerHTML = '<div class="empty small">Не удалось получить список файлов. Проверьте связь и обновите страницу.</div>';
+    return;
+  }
+  if (!matFiles.length) {
+    box.innerHTML = `<div class="empty">
+      <h4>Файлов пока нет</h4>
+      Загрузите справочник формул, конспекты или подборки задач — PDF, Word, картинки.<br>
+      Они будут доступны с компьютера и телефона, до 50 МБ на файл.</div>`;
+    return;
+  }
+  box.innerHTML = '<div class="tbl-wrap"><table class="tbl"><tbody>' + matFiles.map(f => {
+    const size = f.metadata && f.metadata.size ? fileSize(f.metadata.size) : '';
+    const when = f.updated_at || f.created_at || '';
+    return `<tr>
+      <td style="width:26px;font-size:18px">${fileIcon(f.name)}</td>
+      <td><b>${esc(f.name)}</b></td>
+      <td class="nowrap muted small">${esc(size)}</td>
+      <td class="nowrap muted small">${when ? esc(fmtDate(new Date(when))) : ''}</td>
+      <td class="nowrap"><button class="btn btn-sm" data-dl="${esc(f.name)}">Скачать</button>
+        <button class="btn btn-sm btn-ghost" data-fdel="${esc(f.name)}">✕</button></td>
+    </tr>`;
+  }).join('') + '</tbody></table></div>';
+
+  $$('[data-dl]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      const url = await fileLink(b.dataset.dl);
+      const a = document.createElement('a');
+      a.href = url; a.download = b.dataset.dl; a.target = '_blank'; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { toast(e.message); }
+    b.disabled = false;
+  });
+  $$('[data-fdel]').forEach(b => b.onclick = () => confirmBox('Удалить файл «' + b.dataset.fdel + '» из хранилища?', async () => {
+    try { await fileDelete(b.dataset.fdel); matFiles = null; toast('Файл удалён'); loadFiles(); }
+    catch (e) { toast(e.message); }
+  }));
+}
+/* =========================================================
    ОПЛАТЫ И ДОЛГИ
    ========================================================= */
 function debtRange() { return [key(addDays(new Date(), -365)), todayKey()]; }
@@ -2053,7 +2241,6 @@ function viewSettings() {
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
         <button class="btn" id="applyPrices">Проставить цены по умолчанию всем</button>
         <button class="btn" id="clearMarks">Стереть отметки посещаемости</button>
-        <button class="btn" id="loadDemo">Заполнить моим расписанием</button>
         <button class="btn btn-danger" id="clearAll">Удалить все данные</button>
       </div>
       <div class="list-line"><div class="grow muted small">Версия кабинета</div><b class="small">${APP_VERSION}</b></div>
@@ -2136,41 +2323,9 @@ function viewSettings() {
   $('#clearMarks').onclick = () => confirmBox('Стереть все отметки посещаемости и оплат? Ученики, группы и расписание останутся, пропадёт только история галочек.', () => {
     clearMarks(); render(true); toast('Отметки стёрты');
   }, 'Стереть');
-  $('#loadDemo').onclick = () => confirmBox('Заполнить кабинет учениками и расписанием из вашей таблицы (Вова, Вася, Илья, группа «Тим + Ксю»)? Текущие ученики и расписание будут заменены, отметки посещаемости не добавляются.', () => {
-    const keep = DB.settings;
-    DB = defaultDB(); DB.settings = keep; seedDemo(); save(); applyTheme(); render(true); toast('Расписание заполнено');
-  }, 'Заполнить');
   $('#clearAll').onclick = () => confirmBox('Удалить всех учеников, расписание и отметки? Действие необратимо — сначала скачайте копию.', () => {
     DB = defaultDB(); save(); render(); toast('Данные очищены');
   });
-}
-
-/* =========================================================
-   ЗАГОТОВКА: ученики, группа и расписание по вашей таблице.
-   Никакой выдуманной посещаемости — отметки ставите вы сами.
-   ========================================================= */
-function seedDemo() {
-  const P = DB.settings.defaultPrice, G = DB.settings.groupPrice;
-  const mk = (o) => Object.assign({ id: 'u' + uid(), archived: false, created: todayKey(), subjects: ['Ф'], price: P }, o);
-  const vova = mk({ name: 'Вова', grade: 9, subjects: ['Ф'], goal: 'ОГЭ' });
-  const vasya = mk({ name: 'Вася', grade: 10, subjects: ['Ф'], goal: 'ЕГЭ' });
-  const ilya = mk({ name: 'Илья', grade: 9, subjects: ['М'], goal: 'ОГЭ' });
-  const tim = mk({ name: 'Тимофей', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: G });
-  const ksu = mk({ name: 'Ксюша', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: G });
-  DB.students = [vova, vasya, ilya, tim, ksu];
-  const grp = { id: 'g' + uid(), name: 'Тим + Ксю', perStudent: G, subject: 'М', studentIds: [tim.id, ksu.id], note: 'Профильная математика, ЕГЭ', archived: false };
-  DB.groups = [grp];
-  const start = key(startOfWeek(new Date()));
-  const S = (kind, refId, wd, time, subject) => ({
-    id: 's' + uid(), kind, refId, wd, time, subject, dur: 60,
-    price: defaultPriceFor(kind, refId, 60), from: start, to: null, archived: false
-  });
-  DB.slots = [
-    S('group', grp.id, 0, '18:00', 'М'),
-    S('student', vova.id, 1, '12:00', 'Ф'),
-    S('student', vasya.id, 2, '13:00', 'Ф'),
-    S('student', ilya.id, 3, '12:00', 'М')
-  ];
 }
 
 /** Проставить всем ученикам и группам цены по умолчанию из настроек */
@@ -2190,7 +2345,7 @@ function clearMarks() {
 /* =========================================================
    РОУТЕР И ЗАПУСК
    ========================================================= */
-const VIEWS = { dash: viewDash, week: viewWeek, students: viewStudents, money: viewMoney, settings: viewSettings };
+const VIEWS = { dash: viewDash, week: viewWeek, students: viewStudents, money: viewMoney, mat: viewMaterials, settings: viewSettings };
 
 let pendingRender = false;
 /** Пока пользователь печатает в поле — страницу не перерисовываем, иначе теряется фокус */
