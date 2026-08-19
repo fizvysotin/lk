@@ -202,6 +202,7 @@ a{color:var(--brand)}
 .tm.f{background:var(--st-good);color:#fff}
 .tm.p{background:var(--st-warn);color:#3a2a00}
 .tm.z{background:var(--st-crit-bg);color:var(--st-crit)}
+select.grade-sel{width:auto;min-width:64px;padding:5px 8px;font-weight:700;text-align:center}
 
 /* ============ BUTTONS / FORMS ============ */
 .btn{
@@ -521,7 +522,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '1.9 · 20 августа 2026, 03:00';
+const APP_VERSION = '2.0 · 20 августа 2026, 03:40';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -597,6 +598,7 @@ function defaultDB() {
     slots: [],
     extra: [],   // разовые занятия (не используется)
     links: [],   // свои полезные ссылки
+    files: [],   // имена загруженных файлов
     hw: [],      // домашние задания
     works: [],   // контрольные и пробники
     marks: {}    // отметки: id занятия -> {st, paid, price, note}
@@ -1032,7 +1034,7 @@ function showAuth(msg) {
 function normalizeDB(data) {
   const d = Object.assign(defaultDB(), data || {});
   d.settings = Object.assign(defaultDB().settings, d.settings || {});
-  ['students', 'groups', 'slots', 'extra', 'links', 'hw', 'works'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+  ['students', 'groups', 'slots', 'extra', 'links', 'files', 'hw', 'works'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
   if (!d.marks || typeof d.marks !== 'object') d.marks = {};
   // переход на «цену с человека» в группах
   d.groups.forEach(g => {
@@ -1923,6 +1925,25 @@ const SOCIAL = [
 ];
 
 /* ---------- работа с хранилищем ---------- */
+// Supabase не принимает кириллицу и часть символов в имени объекта,
+// поэтому в хранилище кладём латиницей, а красивое имя держим в базе.
+const RU_MAP = {
+  'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i',
+  'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+  'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
+  'э': 'e', 'ю': 'yu', 'я': 'ya'
+};
+function translit(name) {
+  const out = String(name).split('').map(ch => {
+    const low = ch.toLowerCase(), t = RU_MAP[low];
+    if (t == null) return ch;
+    return ch === low ? t : (t ? t.charAt(0).toUpperCase() + t.slice(1) : '');
+  }).join('');
+  const safe = out.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/_+/g, '_').replace(/^[._-]+|_+$/g, '');
+  return (safe || 'file').slice(0, 90);
+}
+function fileMap() { if (!DB.files) DB.files = []; return DB.files; }
+function niceName(key) { const r = fileMap().find(f => f.k === key); return r ? r.n : key; }
 function storagePath(name) { return AUTH.uid() + '/' + name; }
 function encPath(name) { return name.split('/').map(encodeURIComponent).join('/'); }
 
@@ -1937,34 +1958,45 @@ async function filesList() {
 }
 
 async function fileUpload(file) {
-  const path = encPath(storagePath(file.name));
+  const key = translit(file.name);
+  const path = encPath(storagePath(key));
   const headers = { 'x-upsert': 'true' };
   if (file.type) headers['Content-Type'] = file.type;
   const r = await api('/storage/v1/object/' + BUCKET + '/' + path, {
     method: 'POST', raw: true, body: file, headers: headers
   });
-  if (r.ok) return;
+  if (r.ok) {
+    const map = fileMap();
+    const found = map.find(f => f.k === key);
+    if (found) { found.n = file.name; found.s = file.size; found.d = todayKey(); }
+    else map.push({ k: key, n: file.name, s: file.size, d: todayKey() });
+    save();
+    return;
+  }
   const t = await r.text().catch(() => '');
   let msg = '';
   try { const j = JSON.parse(t); msg = j.message || j.error || ''; } catch (e) { msg = t; }
   if (r.status === 413 || /maximum allowed size|too large|exceeded/i.test(msg)) throw new Error('файл больше 50 МБ');
   if (/bucket not found/i.test(msg)) throw new Error('хранилище ещё не настроено — напишите мне, включу');
+  if (/invalid key/i.test(msg)) throw new Error('недопустимое имя файла — переименуйте латиницей');
   if (r.status === 401 || r.status === 403 || /row-level security|Unauthorized|jwt/i.test(msg)) throw new Error('истёк вход — обновите страницу и войдите заново');
   throw new Error((msg || 'ошибка ' + r.status).slice(0, 120));
 }
 
-async function fileLink(name) {
-  const r = await api('/storage/v1/object/sign/' + BUCKET + '/' + encPath(storagePath(name)), {
+async function fileLink(key) {
+  const r = await api('/storage/v1/object/sign/' + BUCKET + '/' + encPath(storagePath(key)), {
     method: 'POST', body: JSON.stringify({ expiresIn: 3600 })
   });
   if (!r.ok) throw new Error('Не удалось получить ссылку');
   const j = await r.json();
-  return CLOUD.url + '/storage/v1' + j.signedURL;
+  return CLOUD.url + '/storage/v1' + j.signedURL + '&download=' + encodeURIComponent(niceName(key));
 }
 
-async function fileDelete(name) {
-  const r = await api('/storage/v1/object/' + BUCKET + '/' + encPath(storagePath(name)), { method: 'DELETE' });
+async function fileDelete(key) {
+  const r = await api('/storage/v1/object/' + BUCKET + '/' + encPath(storagePath(key)), { method: 'DELETE' });
   if (!r.ok) throw new Error('Не удалось удалить файл');
+  DB.files = fileMap().filter(f => f.k !== key);
+  save();
 }
 
 const fileSize = b => b >= 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : Math.max(1, Math.round(b / 1024)) + ' КБ';
@@ -1979,9 +2011,10 @@ const fileIcon = n => {
 };
 
 /* ---------- экран ---------- */
-let matFiles = null, matError = '';
+let matFiles = null, matError = '', lastUploadError = '';
 
 function viewMaterials() {
+  const pendingError = matError; matError = '';
   $('#app').innerHTML = `
   <div class="page-head">
     <div><h2>Материалы</h2><div class="sub">Банки заданий, ваши файлы и ссылки на соцсети</div></div>
@@ -2037,6 +2070,7 @@ function viewMaterials() {
     });
   });
 
+  lastUploadError = pendingError;
   if (cloudOn()) {
     $('#fUpBtn').onclick = () => $('#fInput').click();
     $('#fInput').onchange = async e => {
@@ -2053,7 +2087,7 @@ function viewMaterials() {
         catch (ex) { failed.push(esc(f.name) + ' — ' + esc(ex.message)); }
       }
       matFiles = null;
-      matError = failed.length ? 'Не удалось загрузить:<br>• ' + failed.join('<br>• ') : '';
+      lastUploadError = failed.length ? 'Не удалось загрузить:<br>• ' + failed.join('<br>• ') : '';
       toast(failed.length ? (done ? 'Загружено ' + done + ', с ошибками ' + failed.length : 'Не удалось загрузить') : 'Файлы загружены');
       loadFiles();
     };
@@ -2065,7 +2099,7 @@ function viewMaterials() {
 
 async function loadFiles() {
   const box = $('#fList'); if (!box) return;
-  const err = matError ? '<div class="err-box">' + matError + '</div>' : '';
+  const err = lastUploadError ? '<div class="err-box">' + lastUploadError + '</div>' : '';
   try {
     matFiles = await filesList();
   } catch (e) {
@@ -2082,13 +2116,14 @@ async function loadFiles() {
   box.innerHTML = err + '<div class="tbl-wrap"><table class="tbl"><tbody>' + matFiles.map(f => {
     const size = f.metadata && f.metadata.size ? fileSize(f.metadata.size) : '';
     const when = f.updated_at || f.created_at || '';
+    const shown = niceName(f.name);
     return `<tr>
-      <td style="width:26px;font-size:18px">${fileIcon(f.name)}</td>
-      <td><b>${esc(f.name)}</b></td>
+      <td style="width:26px;font-size:18px">${fileIcon(shown)}</td>
+      <td><b>${esc(shown)}</b></td>
       <td class="nowrap muted small">${esc(size)}</td>
       <td class="nowrap muted small">${when ? esc(fmtDate(new Date(when))) : ''}</td>
       <td class="nowrap"><button class="btn btn-sm" data-dl="${esc(f.name)}">Скачать</button>
-        <button class="btn btn-sm btn-ghost" data-fdel="${esc(f.name)}">✕</button></td>
+        <button class="btn btn-sm btn-ghost" data-fdel="${esc(f.name)}" data-nice="${esc(shown)}">✕</button></td>
     </tr>`;
   }).join('') + '</tbody></table></div>';
 
@@ -2097,12 +2132,12 @@ async function loadFiles() {
     try {
       const url = await fileLink(b.dataset.dl);
       const a = document.createElement('a');
-      a.href = url; a.download = b.dataset.dl; a.target = '_blank'; a.rel = 'noopener';
+      a.href = url; a.download = niceName(b.dataset.dl); a.target = '_blank'; a.rel = 'noopener';
       document.body.appendChild(a); a.click(); a.remove();
     } catch (e) { toast(e.message); }
     b.disabled = false;
   });
-  $$('[data-fdel]').forEach(b => b.onclick = () => confirmBox('Удалить файл «' + b.dataset.fdel + '» из хранилища?', async () => {
+  $$('[data-fdel]').forEach(b => b.onclick = () => confirmBox('Удалить файл «' + (b.dataset.nice || b.dataset.fdel) + '» из хранилища?', async () => {
     try { await fileDelete(b.dataset.fdel); matFiles = null; toast('Файл удалён'); loadFiles(); }
     catch (e) { toast(e.message); }
   }));
@@ -2178,6 +2213,8 @@ function viewProgress() {
 
   const hwDone = hw.filter(h => h.done).length;
   const hwPct = hw.length ? Math.round(hwDone / hw.length * 100) : 0;
+  const hwGraded = hw.filter(h => +h.grade);
+  const hwAvg = hwGraded.length ? Math.round(hwGraded.reduce((a, h) => a + (+h.grade), 0) / hwGraded.length * 10) / 10 : 0;
   const graded = works.filter(w => w.grade);
   const avg5 = graded.filter(w => w.scale === 5);
   const avg100 = graded.filter(w => w.scale === 100);
@@ -2197,24 +2234,40 @@ function viewProgress() {
   <div class="grid cols-4" style="margin-bottom:14px">
     <div class="stat"><div class="label">Домашка сделана</div><div class="value">${hwPct}%</div>
       <div class="delta">${hwDone} из ${hw.length}</div></div>
-    <div class="stat"><div class="label">Просрочено</div><div class="value" style="${overdue ? 'color:var(--st-crit)' : ''}">${overdue}</div>
-      <div class="delta">${overdue ? 'стоит напомнить' : 'всё вовремя'}</div></div>
-    <div class="stat"><div class="label">Средняя оценка</div><div class="value">${mean(avg5) || '—'}</div>
+    <div class="stat"><div class="label">Средняя за домашку</div><div class="value">${hwAvg || '—'}</div>
+      <div class="delta">${hwGraded.length} ${plural(hwGraded.length, 'оценка', 'оценки', 'оценок')}${overdue ? ' · просрочено ' + overdue : ''}</div></div>
+    <div class="stat"><div class="label">Средняя за работы</div><div class="value">${mean(avg5) || '—'}</div>
       <div class="delta">по пятибалльной, ${avg5.length} ${plural(avg5.length, 'работа', 'работы', 'работ')}</div></div>
     <div class="stat"><div class="label">Средний балл ЕГЭ</div><div class="value">${mean(avg100) || '—'}</div>
       <div class="delta">по стобалльной, ${avg100.length} ${plural(avg100.length, 'работа', 'работы', 'работ')}</div></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Оценки за домашние задания</div>
+        <div class="card-sub">По пятибалльной шкале, по датам сдачи</div></div></div>
+      <div id="chartHw"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Результаты работ</div>
+        <div class="card-sub">Процент выполнения — сравнимо и для ЕГЭ, и для ОГЭ</div></div></div>
+      <div id="chartWorks"></div>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-head"><div><div class="card-title">Домашние задания</div>
       <div class="card-sub">Нажмите на статус, чтобы отметить выполнение</div></div></div>
     ${hw.length ? `<div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>Ученик</th><th>Задание</th><th>К дате</th><th>Статус</th><th></th></tr></thead>
+      <thead><tr><th>Ученик</th><th>Задание</th><th>К дате</th><th>Статус</th><th>Оценка</th><th></th></tr></thead>
       <tbody>${hw.slice(0, 100).map(h => `<tr>
         <td class="nowrap"><b>${esc(targetName('student', h.studentId))}</b></td>
         <td>${esc(h.text)}</td>
         <td class="nowrap muted small">${h.due ? fmtDate(parseKey(h.due)) : '—'}</td>
         <td><button class="pay-btn ${h.done ? 'on' : ''}" data-hwdone="${h.id}">${h.done ? '✓ сделано' : (h.due && h.due < todayKey() ? '✕ просрочено' : '· не сдано')}</button></td>
+        <td><select class="grade-sel" data-hwgrade="${h.id}">
+          ${['', '5', '4', '3', '2'].map(g => `<option value="${g}" ${String(h.grade || '') === g ? 'selected' : ''}>${g || '—'}</option>`).join('')}
+        </select></td>
         <td class="nowrap"><button class="btn btn-sm btn-ghost" data-hwedit="${h.id}">✎</button>
           <button class="btn btn-sm btn-ghost" data-hwdel="${h.id}">✕</button></td>
       </tr>`).join('')}</tbody></table></div>`
@@ -2258,6 +2311,12 @@ function viewProgress() {
     h.done = !h.done; h.doneAt = h.done ? todayKey() : null;
     save(); render(true);
   });
+  $$('[data-hwgrade]').forEach(sel => sel.onchange = () => {
+    const h = hwList().find(x => x.id === sel.dataset.hwgrade);
+    h.grade = +sel.value || null;
+    if (h.grade && !h.done) { h.done = true; h.doneAt = todayKey(); }
+    save(); render(true);
+  });
   $$('[data-hwedit]').forEach(b => b.onclick = () => hwModal(hwList().find(x => x.id === b.dataset.hwedit)));
   $$('[data-hwdel]').forEach(b => b.onclick = () => confirmBox('Удалить это домашнее задание?', () => {
     DB.hw = hwList().filter(x => x.id !== b.dataset.hwdel); save(); render(true); toast('Удалено');
@@ -2266,7 +2325,32 @@ function viewProgress() {
   $$('[data-wdel]').forEach(b => b.onclick = () => confirmBox('Удалить эту работу вместе с разбором по заданиям?', () => {
     DB.works = workList().filter(x => x.id !== b.dataset.wdel); save(); render(true); toast('Удалено');
   }));
+
+  // график оценок за домашку
+  const hwRows = hwGraded.slice().sort((a, b) => (a.due || a.date).localeCompare(b.due || b.date)).slice(-14).map(h => ({
+    label: fmtShort(h.due || h.date), vals: [+h.grade],
+    tip: '<b>' + esc(targetName('student', h.studentId)) + '</b>' + esc((h.text || '').slice(0, 60))
+      + '<br>Оценка: ' + h.grade
+  }));
+  renderBars($('#chartHw'), {
+    rows: hwRows, series: [{ name: 'Оценка', color: 'var(--series-1)' }], integer: true,
+    fmt: v => Math.round(v), valueLabels: v => v || ''
+  });
+
+  // график результатов работ
+  const wRows = works.slice().sort((a, b) => a.date.localeCompare(b.date)).slice(-14).map(w => ({
+    label: fmtShort(w.date), vals: [workPct(w)],
+    tip: '<b>' + esc(w.title || w.type) + '</b>' + esc(targetName('student', w.studentId))
+      + '<br>Первичный: ' + workPrimary(w) + ' из ' + workMax(w)
+      + '<br>Оценка: ' + (w.grade || '—') + (w.scale === 100 ? ' из 100' : ' из 5')
+  }));
+  renderBars($('#chartWorks'), {
+    rows: wRows, series: [{ name: '% выполнения', color: 'var(--series-1)' }],
+    fmt: v => Math.round(v) + '%', valueLabels: v => v ? Math.round(v) + '%' : ''
+  });
 }
+
+const fmtShort = k => { const d = parseKey(k); return d.getDate() + ' ' + MONTHS_S[d.getMonth()]; };
 
 /* ---------- домашнее задание ---------- */
 function hwModal(h) {
@@ -2282,6 +2366,11 @@ function hwModal(h) {
       </div>
       <div class="field"><label>Что задано</label>
         <textarea id="hText" placeholder="Например: §14, задачи 3–8; вариант 5 из сборника">${h ? esc(h.text) : ''}</textarea></div>
+      <div class="row">
+        <div class="field" style="max-width:180px"><label>Оценка за работу</label>
+          <select id="hGrade">${['', '5', '4', '3', '2'].map(g => `<option value="${g}" ${h && String(h.grade || '') === g ? 'selected' : ''}>${g || 'без оценки'}</option>`).join('')}</select>
+          <span class="hint">По пятибалльной шкале</span></div>
+      </div>
       ${h ? `<label class="chk ${h.done ? 'on' : ''}" id="hDoneWrap"><input type="checkbox" id="hDone" ${h.done ? 'checked' : ''}> Выполнено</label>` : ''}
     </div>
     <div class="modal-foot"><button class="btn" data-close>Отмена</button>
@@ -2292,9 +2381,9 @@ function hwModal(h) {
     const text = $('#hText').value.trim();
     if (!sid) { toast('Сначала добавьте учеников'); return; }
     if (!text) { toast('Напишите, что задано'); return; }
-    const data = { studentId: sid, due: $('#hDue').value || null, text: text };
+    const data = { studentId: sid, due: $('#hDue').value || null, text: text, grade: +$('#hGrade').value || null };
     if (!DB.hw) DB.hw = [];
-    if (isNew) DB.hw.push(Object.assign({ id: 'h' + uid(), date: todayKey(), done: false, doneAt: null }, data));
+    if (isNew) DB.hw.push(Object.assign({ id: 'h' + uid(), date: todayKey(), done: !!data.grade, doneAt: data.grade ? todayKey() : null }, data));
     else Object.assign(h, data, { done: $('#hDone').checked, doneAt: $('#hDone').checked ? (h.doneAt || todayKey()) : null });
     save(); closeModal(); render(true); toast('Сохранено');
   };
