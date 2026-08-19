@@ -485,7 +485,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '1.4 · 20 августа 2026, 00:10';
+const APP_VERSION = '1.5 · 20 августа 2026, 00:35';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -1203,8 +1203,9 @@ function viewDash() {
     </ol>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" data-go="students">Добавить ученика</button>
-      <button class="btn" id="dashDemo">Посмотреть на примере</button>
+      <button class="btn" id="dashDemo">Заполнить моим расписанием</button>
     </div>
+    <div class="muted small" style="margin-top:8px">Вторая кнопка сразу заведёт Вову, Васю, Илью и группу «Тим + Ксю» с их днями и временем — дальше только поправите цены.</div>
   </div>` : ''}
 
   <div class="grid cols-4" style="margin-bottom:14px">
@@ -1353,7 +1354,7 @@ function viewDash() {
     </div>`).join('') : '<div class="empty small">Сегодня занятий нет — можно выдохнуть 🙂</div>';
 
   if ($('#dashDemo')) $('#dashDemo').onclick = () => {
-    seedDemo(); save(); render(); toast('Загружен пример — очистить можно в Настройках');
+    seedDemo(); save(); render(true); toast('Готово — проверьте цены в карточках учеников');
   };
   $('#mPrev').onclick = () => { dashMonth = key(new Date(y, m - 2, 1)).slice(0, 7); render(); };
   $('#mNext').onclick = () => { dashMonth = key(new Date(y, m, 1)).slice(0, 7); render(); };
@@ -2100,8 +2101,10 @@ function viewSettings() {
           <button data-theme="dark" class="${s.theme === 'dark' ? 'on' : ''}">🌙 Тёмная</button>
         </div>
       </div>
-      <div class="row" style="margin-top:14px">
-        <button class="btn" id="loadDemo">Загрузить пример</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn" id="applyPrices">Проставить цены по умолчанию всем</button>
+        <button class="btn" id="clearMarks">Стереть отметки посещаемости</button>
+        <button class="btn" id="loadDemo">Заполнить моим расписанием</button>
         <button class="btn btn-danger" id="clearAll">Удалить все данные</button>
       </div>
       <div class="list-line"><div class="grow muted small">Версия кабинета</div><b class="small">${APP_VERSION}</b></div>
@@ -2177,49 +2180,62 @@ function viewSettings() {
     };
     $('#cfOut').onclick = () => $('#btnLogout').click();
   }
-  $('#loadDemo').onclick = () => confirmBox('Загрузить демонстрационные данные вместо текущих?', () => {
-    DB = defaultDB(); seedDemo(); save(); applyTheme(); render(); toast('Пример загружен');
-  }, 'Загрузить');
+  $('#applyPrices').onclick = () => confirmBox('Проставить всем ученикам ' + money(s.defaultPrice)
+    + ' за час, а в группах — ' + money(s.groupPrice) + ' с человека? Цены в уже отмеченных занятиях не изменятся.', () => {
+      applyDefaultPrices(); render(true); toast('Цены обновлены');
+    }, 'Проставить');
+  $('#clearMarks').onclick = () => confirmBox('Стереть все отметки посещаемости и оплат? Ученики, группы и расписание останутся, пропадёт только история галочек.', () => {
+    clearMarks(); render(true); toast('Отметки стёрты');
+  }, 'Стереть');
+  $('#loadDemo').onclick = () => confirmBox('Заполнить кабинет учениками и расписанием из вашей таблицы (Вова, Вася, Илья, группа «Тим + Ксю»)? Текущие ученики и расписание будут заменены, отметки посещаемости не добавляются.', () => {
+    const keep = DB.settings;
+    DB = defaultDB(); DB.settings = keep; seedDemo(); save(); applyTheme(); render(true); toast('Расписание заполнено');
+  }, 'Заполнить');
   $('#clearAll').onclick = () => confirmBox('Удалить всех учеников, расписание и отметки? Действие необратимо — сначала скачайте копию.', () => {
     DB = defaultDB(); save(); render(); toast('Данные очищены');
   });
 }
 
 /* =========================================================
-   ДЕМО-ДАННЫЕ (по вашему текущему расписанию)
+   ЗАГОТОВКА: ученики, группа и расписание по вашей таблице.
+   Никакой выдуманной посещаемости — отметки ставите вы сами.
    ========================================================= */
 function seedDemo() {
-  const mk = (o) => Object.assign({ id: 'u' + uid(), archived: false, created: todayKey(), subjects: ['Ф'], price: 1500 }, o);
-  const vova = mk({ name: 'Вова', grade: 9, subjects: ['Ф'], goal: 'ОГЭ', price: 1500 });
-  const vasya = mk({ name: 'Вася', grade: 10, subjects: ['Ф'], goal: 'ЕГЭ', price: 1500 });
-  const ilya = mk({ name: 'Илья', grade: 9, subjects: ['М'], goal: 'ОГЭ', price: 1500 });
-  const tim = mk({ name: 'Тимофей', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: 1200 });
-  const ksu = mk({ name: 'Ксюша', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: 1200 });
+  const P = DB.settings.defaultPrice, G = DB.settings.groupPrice;
+  const mk = (o) => Object.assign({ id: 'u' + uid(), archived: false, created: todayKey(), subjects: ['Ф'], price: P }, o);
+  const vova = mk({ name: 'Вова', grade: 9, subjects: ['Ф'], goal: 'ОГЭ' });
+  const vasya = mk({ name: 'Вася', grade: 10, subjects: ['Ф'], goal: 'ЕГЭ' });
+  const ilya = mk({ name: 'Илья', grade: 9, subjects: ['М'], goal: 'ОГЭ' });
+  const tim = mk({ name: 'Тимофей', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: G });
+  const ksu = mk({ name: 'Ксюша', grade: 10, subjects: ['М'], goal: 'ЕГЭ', price: G });
   DB.students = [vova, vasya, ilya, tim, ksu];
-  const grp = { id: 'g' + uid(), name: 'Тим + Ксю', perStudent: 1200, subject: 'М', studentIds: [tim.id, ksu.id], note: 'Готовимся к профильной математике', archived: false };
+  const grp = { id: 'g' + uid(), name: 'Тим + Ксю', perStudent: G, subject: 'М', studentIds: [tim.id, ksu.id], note: 'Профильная математика, ЕГЭ', archived: false };
   DB.groups = [grp];
-  const start = key(addDays(new Date(), -42));
-  const S = (kind, refId, wd, time, subject, price) => ({ id: 's' + uid(), kind, refId, wd, time, subject, price, dur: 60, from: start, to: null, archived: false });
-  DB.slots = [
-    S('group', grp.id, 0, '18:00', 'М', 2400),
-    S('student', vova.id, 1, '12:00', 'Ф', 1500),
-    S('student', vasya.id, 2, '13:00', 'Ф', 1500),
-    S('student', ilya.id, 3, '12:00', 'М', 1500)
-  ];
-  // отметки за прошедшие 6 недель — чтобы дашборд был живой
-  const today = todayKey();
-  let i = 0;
-  occurrences(start, today).forEach(o => {
-    i++;
-    if (o.date >= today) return;
-    const r = (i * 7919) % 100;
-    let st = 'done', paid = true;
-    if (r < 6) { st = 'move'; paid = false; }
-    else if (r < 11) { st = 'miss'; paid = r % 2 === 0; }
-    else if (r < 14) { st = 'cancel'; paid = false; }
-    else if (r < 26) { paid = false; }
-    setMark(o.id, { st: st, paid: paid });
+  const start = key(startOfWeek(new Date()));
+  const S = (kind, refId, wd, time, subject) => ({
+    id: 's' + uid(), kind, refId, wd, time, subject, dur: 60,
+    price: defaultPriceFor(kind, refId, 60), from: start, to: null, archived: false
   });
+  DB.slots = [
+    S('group', grp.id, 0, '18:00', 'М'),
+    S('student', vova.id, 1, '12:00', 'Ф'),
+    S('student', vasya.id, 2, '13:00', 'Ф'),
+    S('student', ilya.id, 3, '12:00', 'М')
+  ];
+}
+
+/** Проставить всем ученикам и группам цены по умолчанию из настроек */
+function applyDefaultPrices() {
+  DB.students.forEach(s => { s.price = DB.settings.defaultPrice; });
+  DB.groups.forEach(g => { g.perStudent = DB.settings.groupPrice; });
+  DB.slots.forEach(sl => { sl.price = defaultPriceFor(sl.kind, sl.refId, sl.dur); });
+  save();
+}
+
+/** Стереть все отметки посещаемости и оплат, оставив учеников и расписание */
+function clearMarks() {
+  DB.marks = {};
+  save();
 }
 
 /* =========================================================
