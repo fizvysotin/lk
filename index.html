@@ -220,6 +220,28 @@ select.grade-sel{width:auto;min-width:64px;padding:5px 8px;font-weight:700;text-
 .topic-d{flex:none;white-space:nowrap}
 .topic.done{background:var(--brand-soft)}
 .topic.done .topic-t{color:var(--brand-ink);font-weight:600}
+.topic-d .date-chip{
+  cursor:pointer;font-size:11px;color:var(--muted);white-space:nowrap;
+  border-bottom:1px dashed var(--line-strong);padding-bottom:1px;
+}
+.topic-d .date-chip:hover{color:var(--brand);border-color:var(--brand)}
+.date-inline{width:132px;padding:2px 6px;font-size:11.5px;border-radius:7px}
+/* сворачиваемый блок «Пройденные темы» */
+.topics-box{border-radius:var(--radius-sm);overflow:hidden}
+.topics-box > summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:10px 12px;border-radius:var(--radius-sm);background:var(--surface-2);
+  border:1px solid var(--line);font-size:14px;
+}
+.topics-box > summary::-webkit-details-marker{display:none}
+.topics-box > summary::before{content:'▸';color:var(--muted);font-size:12px;transition:transform .15s}
+.topics-box[open] > summary::before{transform:rotate(90deg)}
+.topics-box > summary:hover{background:var(--surface-3)}
+.tb-title{font-weight:700}
+.tb-sum{color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums}
+.tb-bar{flex:1;min-width:80px;height:7px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+.tb-bar i{display:block;height:100%;background:var(--series-1);border-radius:4px}
+.topics-body{padding:14px 4px 4px}
 
 /* ============ BUTTONS / FORMS ============ */
 .btn{
@@ -539,7 +561,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '2.2 · 20 августа 2026, 05:10';
+const APP_VERSION = '2.3 · 20 августа 2026, 06:00';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -1870,9 +1892,6 @@ function studentCard(s) {
       ${slotsOf('student', s.id).length ? '<div class="card-title" style="margin-bottom:6px">Постоянное расписание</div><div class="checks" style="margin-bottom:14px">'
       + slotsOf('student', s.id).map(x => '<span class="badge">🗓 ' + slotLine(x) + ' · ' + x.subject + ' · ' + money(x.price || 0) + '</span>').join('') + '</div>' : ''}
       ${s.note ? '<div class="card" style="margin-bottom:14px;background:var(--surface-2)"><div class="card-title">Заметки</div><div class="small" style="margin-top:4px;white-space:pre-wrap">' + esc(s.note) + '</div></div>' : ''}
-      <div class="card-title" style="margin-bottom:6px">Пройденные темы</div>
-      <div id="stTopics" style="margin-bottom:16px">${topicsPanel(s)}</div>
-
       <div class="card-title" style="margin-bottom:6px">История занятий</div>
       <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
         <table class="tbl"><tbody>
@@ -1886,6 +1905,8 @@ function studentCard(s) {
         </tr>`).join('') : '<tr><td class="muted">Занятий пока нет</td></tr>'}
         </tbody></table>
       </div>
+
+      <div id="stTopics" style="margin-top:16px">${topicsPanel(s)}</div>
     </div>
     <div class="modal-foot"><button class="btn" data-close>Закрыть</button>
       <button class="btn btn-primary" id="cEdit">Изменить данные</button></div>`);
@@ -2277,13 +2298,6 @@ function viewProgress() {
       <div class="delta">по стобалльной, ${avg100.length} ${plural(avg100.length, 'работа', 'работы', 'работ')}</div></div>
   </div>
 
-  ${progStudent !== 'all' && student(progStudent) ? `
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-head"><div><div class="card-title">Пройденные темы</div>
-      <div class="card-sub">Отмечайте темы галочкой — список берётся из программы ученика</div></div></div>
-    <div id="progTopics">${topicsPanel(student(progStudent))}</div>
-  </div>` : ''}
-
   <div class="grid cols-2" style="margin-bottom:14px">
     <div class="card">
       <div class="card-head"><div><div class="card-title">Оценки за домашние задания</div>
@@ -2343,7 +2357,10 @@ function viewProgress() {
         </div>
       </div>`).join('')}</div>`
       : '<div class="empty small">Работ пока нет. Нажмите «+ Работа», чтобы внести пробник или контрольную.</div>'}
-  </div>`;
+  </div>
+
+  ${progStudent !== 'all' && student(progStudent)
+      ? `<div class="card" id="progTopics">${topicsPanel(student(progStudent))}</div>` : ''}`;
 
   $('#pStudent').onchange = e => { progStudent = e.target.value; render(true); };
   if (progStudent !== 'all' && student(progStudent)) {
@@ -2687,7 +2704,11 @@ function studentProgram(s) {
 function doneMap(s) { if (!s.topics) s.topics = {}; return s.topics; }
 function doneCount(s, p) { const d = doneMap(s); return realTopics(p).filter(t => d[t.id]).length; }
 
-/** Панель со списком тем ученика */
+let topicsOpen = false;
+
+const dateText = v => (typeof v === 'string' && /^\d{4}-/.test(v)) ? fmtDate(parseKey(v)) : '';
+
+/** Панель со списком тем ученика (сворачиваемая) */
 function topicsPanel(s) {
   const p = studentProgram(s);
   if (!programs().length) return '<div class="empty small">Программы ещё не настроены</div>';
@@ -2695,51 +2716,120 @@ function topicsPanel(s) {
       <option value="">— программа не выбрана —</option>
       ${programs().map(x => `<option value="${x.id}" ${p && x.id === p.id ? 'selected' : ''}>${esc(x.name)} · ${realTopics(x).length} тем</option>`).join('')}
     </select>`;
-  if (!p) return `<div style="margin-bottom:10px">${sel}</div>
-    <div class="empty small">Выберите программу — появится список тем</div>`;
 
   const d = doneMap(s);
+  const total = p ? realTopics(p).length : 0;
+  const done = p ? doneCount(s, p) : 0;
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  let body;
+  if (!p) {
+    body = `<div style="margin-bottom:10px">${sel}</div>
+      <div class="empty small">Выберите программу — появится список тем</div>`;
+  } else {
+    let n = 0;
+    const rows = p.topics.map(t => {
+      if (isSection(t.t)) return `<div class="topic-sec">${esc(secTitle(t.t))}</div>`;
+      n++;
+      const on = !!d[t.id];
+      return `<label class="topic ${on ? 'done' : ''}">
+        <input type="checkbox" data-topic="${t.id}" data-sid="${s.id}" ${on ? 'checked' : ''}>
+        <span class="topic-n">${n}</span>
+        <span class="topic-t">${esc(t.t)}</span>
+        <span class="topic-d">${on ? `<span class="date-chip" data-dfor="${t.id}" data-sid="${s.id}" title="Изменить дату">${esc(dateText(d[t.id]) || 'дата')}</span>` : ''}</span>
+      </label>`;
+    }).join('');
+    body = `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        ${sel}<span class="muted small">Дату можно изменить — нажмите на неё</span>
+      </div>
+      <div class="topics">${rows}</div>`;
+  }
+
+  return `<details class="topics-box" ${topicsOpen ? 'open' : ''}>
+    <summary>
+      <span class="tb-title">Пройденные темы</span>
+      <span class="tb-sum" data-tp-sum>${p ? done + ' из ' + total + ' · ' + pct + '%' : 'программа не выбрана'}</span>
+      <span class="tb-bar"><i data-tp-bar style="width:${pct}%"></i></span>
+    </summary>
+    <div class="topics-body">${body}</div>
+  </details>`;
+}
+
+/** Точечно обновить счётчик и полосу прогресса — без перерисовки списка */
+function updateTopicsProgress(s) {
+  const p = studentProgram(s); if (!p) return;
   const total = realTopics(p).length, done = doneCount(s, p);
   const pct = total ? Math.round(done / total * 100) : 0;
-  let n = 0;
-  const rows = p.topics.map(t => {
-    if (isSection(t.t)) return `<div class="topic-sec">${esc(secTitle(t.t))}</div>`;
-    n++;
-    const on = !!d[t.id];
-    return `<label class="topic ${on ? 'done' : ''}">
-      <input type="checkbox" data-topic="${t.id}" data-sid="${s.id}" ${on ? 'checked' : ''}>
-      <span class="topic-n">${n}</span>
-      <span class="topic-t">${esc(t.t)}</span>
-      <span class="topic-d muted small">${on && d[t.id] !== true ? esc(fmtDate(parseKey(d[t.id]))) : ''}</span>
-    </label>`;
-  }).join('');
+  const sum = document.querySelector('[data-tp-sum]');
+  const bar = document.querySelector('[data-tp-bar]');
+  if (sum) sum.textContent = done + ' из ' + total + ' · ' + pct + '%';
+  if (bar) bar.style.width = pct + '%';
+}
 
-  return `
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-      ${sel}
-      <div style="flex:1;min-width:160px">
-        <div style="display:flex;justify-content:space-between;font-size:12.5px">
-          <span class="muted">Пройдено</span><b>${done} из ${total} · ${pct}%</b>
-        </div>
-        <div class="bar-mini"><i style="width:${pct}%"></i></div>
-      </div>
-    </div>
-    <div class="topics">${rows}</div>`;
+/** Клик по дате — редактор даты прямо в строке */
+function bindDateChip(chip) {
+  chip.onclick = ev => {
+    ev.preventDefault(); ev.stopPropagation();
+    const s = student(chip.dataset.sid); if (!s) return;
+    const tid = chip.dataset.dfor;
+    const cur = doneMap(s)[tid];
+    const inp = document.createElement('input');
+    inp.type = 'date';
+    inp.className = 'date-inline';
+    inp.value = (typeof cur === 'string' && /^\d{4}-/.test(cur)) ? cur : todayKey();
+    chip.replaceWith(inp);
+    inp.focus();
+    if (inp.showPicker) { try { inp.showPicker(); } catch (e) { } }
+    let closed = false;
+    const finish = () => {
+      if (closed) return; closed = true;
+      doneMap(s)[tid] = inp.value || todayKey();
+      save();
+      const c = document.createElement('span');
+      c.className = 'date-chip';
+      c.dataset.dfor = tid; c.dataset.sid = s.id;
+      c.title = 'Изменить дату';
+      c.textContent = dateText(doneMap(s)[tid]) || 'дата';
+      inp.replaceWith(c);
+      bindDateChip(c);
+    };
+    inp.onchange = finish;
+    inp.onblur = finish;
+    inp.onkeydown = e => { if (e.key === 'Enter' || e.key === 'Escape') finish(); };
+  };
 }
 
 /** Обработчики панели тем (вызывать после вставки в DOM) */
 function wireTopics(after) {
+  const box = document.querySelector('.topics-box');
+  if (box) box.ontoggle = () => { topicsOpen = box.open; };
+
   $$('[data-topic]').forEach(cb => cb.onchange = () => {
     const s = student(cb.dataset.sid); if (!s) return;
     const d = doneMap(s);
+    const label = cb.closest('.topic');
     if (cb.checked) d[cb.dataset.topic] = todayKey(); else delete d[cb.dataset.topic];
     save();
-    if (after) after(); else render(true);
+    // обновляем только эту строку и счётчик — страница не дёргается
+    label.classList.toggle('done', cb.checked);
+    const slot = $('.topic-d', label);
+    if (slot) {
+      slot.innerHTML = cb.checked
+        ? '<span class="date-chip" data-dfor="' + cb.dataset.topic + '" data-sid="' + s.id + '" title="Изменить дату">'
+        + esc(dateText(d[cb.dataset.topic]) || 'дата') + '</span>' : '';
+      const chip = $('.date-chip', slot);
+      if (chip) bindDateChip(chip);
+    }
+    updateTopicsProgress(s);
   });
+
+  $$('.date-chip').forEach(bindDateChip);
+
   const sel = $('#tpProgram');
   if (sel) sel.onchange = () => {
     const s = student(sel.dataset.sid); if (!s) return;
     s.programId = sel.value || null;
+    topicsOpen = true;
     save();
     if (after) after(); else render(true);
   };
