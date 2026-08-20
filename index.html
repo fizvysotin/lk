@@ -566,7 +566,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '2.4 · 20 августа 2026, 14:00';
+const APP_VERSION = '2.5 · 20 августа 2026, 15:30';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -1095,6 +1095,12 @@ function normalizeDB(data) {
   d.students.forEach(s => { delete s.contact; delete s.parent; if (!s.topics) s.topics = {}; });
   // при первом запуске заводим готовые программы по темам
   if (!d.programsInit) { d.programs = seedPrograms(); d.programsInit = 1; }
+  // разовая правка: у программы ЕГЭ · физика не было заголовка первого раздела
+  if (!d.secFix1) {
+    const p = d.programs.find(x => x.exam === 'ЕГЭ' && x.subject === 'Ф');
+    if (p && p.topics.length && !/^#/.test(p.topics[0].t)) p.topics.unshift({ id: 't' + uid(), t: '# Механика' });
+    d.secFix1 = 1;
+  }
   return d;
 }
 
@@ -2581,6 +2587,7 @@ function workModal(w) {
 const PROGRAM_SEED = [
   {
     name: 'ЕГЭ · физика', exam: 'ЕГЭ', subject: 'Ф', topics: [
+      '# Механика',
       'Физические величины. Векторы в физике',
       'Кинематика равномерного движения. Производные в физике',
       'Кинематика равноускоренного движения',
