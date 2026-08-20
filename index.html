@@ -248,6 +248,13 @@ select.grade-sel{width:auto;min-width:64px;padding:5px 8px;font-weight:700;text-
 .tb-bar i{display:block;height:100%;background:var(--series-1);border-radius:4px}
 .topics-body{padding:14px 4px 4px}
 
+/* карточка доступа ученика */
+.ac-box{padding:14px;border-radius:var(--radius-sm);background:var(--surface-2);border:1px solid var(--line)}
+.ac-box.ok{border-color:var(--brand);background:var(--brand-soft)}
+.ac-row+.ac-row{margin-top:10px}
+.ac-val{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;font-weight:700;
+  word-break:break-all;user-select:all;margin-top:2px}
+
 /* ============ BUTTONS / FORMS ============ */
 .btn{
   appearance:none;border:1px solid var(--line-strong);background:var(--surface);
@@ -560,13 +567,11 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 <div class="toast" id="toast"></div>
 <script>
 /* =========================================================
-   ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА ПО ФИЗИКЕ
-   Данные хранятся локально в браузере (localStorage).
+   ОБЩИЕ УТИЛИТЫ: константы, даты, форматирование
+   Используются и кабинетом репетитора, и кабинетом ученика.
    ========================================================= */
 'use strict';
 
-const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '2.5 · 20 августа 2026, 15:30';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -589,13 +594,6 @@ const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
-const moneyShort = n => {
-  n = Math.round(n || 0);
-  if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + ' млн';
-  if (Math.abs(n) >= 10000) return Math.round(n / 1000) + 'к';
-  return n.toLocaleString('ru-RU');
-};
 const plural = (n, a, b, c) => {
   n = Math.abs(n) % 100; const n1 = n % 10;
   if (n > 10 && n < 20) return c; if (n1 > 1 && n1 < 5) return b; if (n1 === 1) return a; return c;
@@ -618,6 +616,18 @@ const sameMonth = (k, mk) => k.slice(0, 7) === mk;
 const monthLabel = mk => { const p = mk.split('-'); return MONTHS_N[+p[1] - 1] + ' ' + p[0]; };
 const minutesOf = t => { const p = String(t || '0:0').split(':').map(Number); return p[0] * 60 + (p[1] || 0); };
 const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+/* =========================================================
+   ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
+   ========================================================= */
+const LS_KEY = 'fiz_lk_v1';
+const APP_VERSION = '2.6 · 20 августа 2026, 17:00';
+const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
+const moneyShort = n => {
+  n = Math.round(n || 0);
+  if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + ' млн';
+  if (Math.abs(n) >= 10000) return Math.round(n / 1000) + 'к';
+  return n.toLocaleString('ru-RU');
+};
 
 /* ---------- состояние ---------- */
 let DB = null;
@@ -985,6 +995,7 @@ const SYNC = {
       this.rev = rows[0].rev;
       this.dirty = false;
       this.setStatus('saved');
+      pushPupils();  // обновляем то, что видят ученики
       setTimeout(() => { if (this.status === 'saved') this.setStatus('idle'); }, 2500);
     } catch (e) {
       this.setStatus('offline');
@@ -1083,6 +1094,7 @@ function normalizeDB(data) {
   d.settings = Object.assign(defaultDB().settings, d.settings || {});
   ['students', 'groups', 'slots', 'extra', 'links', 'files', 'hw', 'works', 'programs'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
   if (!d.marks || typeof d.marks !== 'object') d.marks = {};
+  if (!d.access || typeof d.access !== 'object') d.access = {};
   // переход на «цену с человека» в группах
   d.groups.forEach(g => {
     if (g.perStudent == null) {
@@ -1131,6 +1143,7 @@ async function startCloud() {
   writeCache();
   SYNC.setStatus('idle');
   startApp();
+  pushPupils();
 }
 /* =========================================================
    ГРАФИКИ (SVG, без внешних библиотек)
@@ -1244,6 +1257,7 @@ function renderBars(mount, cfg) {
 /* =========================================================
    ДАШБОРД
    ========================================================= */
+/* Дашборд репетитора */
 function viewDash() {
   const mk = dashMonth;
   const occ = monthOcc(mk);
@@ -1920,9 +1934,11 @@ function studentCard(s) {
       <div id="stTopics" style="margin-top:16px">${topicsPanel(s)}</div>
     </div>
     <div class="modal-foot"><button class="btn" data-close>Закрыть</button>
+      <button class="btn" id="cAccess">${accessOf(s) ? 'Доступ выдан' : 'Доступ ученику'}</button>
       <button class="btn btn-primary" id="cEdit">Изменить данные</button></div>`);
   const refreshTopics = () => { const box = $('#stTopics'); if (box) { box.innerHTML = topicsPanel(s); wireTopics(refreshTopics); } };
   wireTopics(refreshTopics);
+  $('#cAccess').onclick = () => { closeModal(); accessModal(s); };
   $('#cEdit').onclick = () => { closeModal(); studentModal(s); };
 }
 
@@ -1966,8 +1982,8 @@ function groupModal(g) {
   };
 }
 /* =========================================================
-   МАТЕРИАЛЫ: банки заданий, соцсети и свои файлы
-   Файлы лежат в приватном хранилище Supabase, папка = ваш id.
+   ОБЩИЕ ССЫЛКИ И ТРАНСЛИТЕРАЦИЯ
+   Используются и в кабинете репетитора, и в кабинете ученика.
    ========================================================= */
 const BUCKET = 'materials';
 
@@ -2004,6 +2020,10 @@ function translit(name) {
   const safe = out.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/_+/g, '_').replace(/^[._-]+|_+$/g, '');
   return (safe || 'file').slice(0, 90);
 }
+/* =========================================================
+   МАТЕРИАЛЫ: банки заданий, соцсети и свои файлы
+   Файлы лежат в приватном хранилище Supabase, папка = ваш id.
+   ========================================================= */
 function fileMap() { if (!DB.files) DB.files = []; return DB.files; }
 function niceName(key) { const r = fileMap().find(f => f.k === key); return r ? r.n : key; }
 function storagePath(name) { return AUTH.uid() + '/' + name; }
@@ -2940,6 +2960,215 @@ function programModal(p) {
     if (isNew) DB.programs.push(Object.assign({ id: 'p' + uid() }, data));
     else Object.assign(p, data);
     save(); closeModal(); render(true); toast('Программа сохранена');
+  };
+}
+/* =========================================================
+   ДОСТУП УЧЕНИКА
+   В кабинет ученика уходит заранее собранный срез: без цен,
+   без оплат и без данных других учеников. Всё, что ученик
+   вообще может запросить с сервера, — это одна его строка.
+   ========================================================= */
+
+const PUPIL_DOMAIN = 'pupil.local';
+const pupilUrl = () => location.origin + location.pathname.replace(/[^/]*$/, '') + 's/';
+
+function accessMap() { if (!DB.access) DB.access = {}; return DB.access; }
+function accessOf(s) { return accessMap()[s.id] || null; }
+function groupsOf(sid) { return (DB.groups || []).filter(g => !g.archived && (g.studentIds || []).indexOf(sid) >= 0); }
+
+const pupilCache = {};
+
+/* ---------- сбор среза ---------- */
+
+function pupilLessons(s) {
+  const now = new Date();
+  const from = key(new Date(now.getFullYear(), now.getMonth() - 2, 1));
+  const to = key(addDays(now, 90));
+  const gs = groupsOf(s.id);
+  const gid = {}; gs.forEach(g => gid[g.id] = g.name);
+  return occurrences(from, to)
+    .filter(o => (o.kind === 'group' ? gid[o.refId] != null : o.refId === s.id))
+    .map(o => ({
+      d: o.date, t: o.time, dur: o.dur || 60,
+      subj: o.subject || '', st: o.st || 'plan',
+      g: o.kind === 'group' ? (gid[o.refId] || '') : ''
+    }));
+}
+
+/** Данные одного ученика. Ничего лишнего сюда попасть не должно. */
+function pupilPayload(s) {
+  const p = studentProgram(s);
+  return {
+    v: 1,
+    name: s.name,
+    grade: s.grade || null,
+    goal: s.goal || '',
+    subjects: s.subjects || [],
+    tutor: DB.settings.owner || '',
+    lessons: pupilLessons(s),
+    hw: (DB.hw || []).filter(h => h.studentId === s.id).map(h => ({
+      id: h.id, date: h.date || null, due: h.due || null, text: h.text || '',
+      done: !!h.done, doneAt: h.doneAt || null, grade: h.grade || null
+    })),
+    works: (DB.works || []).filter(w => w.studentId === s.id).map(w => ({
+      id: w.id, date: w.date || null, title: w.title || '', type: w.type || '',
+      exam: w.exam || '', scale: w.scale || 5, grade: w.grade == null ? null : w.grade,
+      tasks: (w.tasks || []).map(t => ({ n: t.n, max: t.max, got: t.got })),
+      note: w.note || ''
+    })),
+    program: p ? { name: p.name, topics: p.topics.map(t => ({ id: t.id, t: t.t })) } : null,
+    topics: s.topics || {},
+    files: (DB.files || []).map(f => ({ k: f.k, n: f.n, s: f.s, d: f.d })),
+    links: (DB.links || []).map(l => ({ name: l.name, url: l.url, note: l.note || '' }))
+  };
+}
+
+/** Выгрузить срезы всех учеников, у которых есть доступ (только изменившиеся) */
+async function pushPupils(force) {
+  if (!cloudOn() || !AUTH.s) return;
+  const ids = Object.keys(accessMap());
+  if (!ids.length) return;
+  const rows = [];
+  ids.forEach(sid => {
+    const s = student(sid);
+    if (!s) return;
+    const pl = pupilPayload(s);
+    const j = JSON.stringify(pl);
+    if (!force && pupilCache[sid] === j) return;
+    pupilCache[sid] = j;
+    rows.push({ tutor: AUTH.uid(), sid: sid, data: pl, updated_at: new Date().toISOString() });
+  });
+  if (!rows.length) return;
+  try {
+    const r = await api('/rest/v1/pupil_data', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(rows)
+    });
+    if (!r.ok) rows.forEach(x => delete pupilCache[x.sid]);
+  } catch (e) {
+    rows.forEach(x => delete pupilCache[x.sid]);
+  }
+}
+
+/* ---------- выдача и отзыв доступа ---------- */
+
+const PASS_ABC = 'abcdefghjkmnpqrstuvwxyz23456789';
+function genPass(n) {
+  let out = '';
+  for (let i = 0; i < (n || 8); i++) out += PASS_ABC.charAt(Math.floor(Math.random() * PASS_ABC.length));
+  return out.slice(0, 4) + '-' + out.slice(4);
+}
+function genLogin(name) {
+  const base = translit(name).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || 'uchenik';
+  let tail = '';
+  for (let i = 0; i < 4; i++) tail += PASS_ABC.charAt(Math.floor(Math.random() * PASS_ABC.length));
+  return base + tail + '@' + PUPIL_DOMAIN;
+}
+
+async function grantAccess(s) {
+  const login = genLogin(s.name), pass = genPass();
+  const r = await fetch(CLOUD.url + '/auth/v1/signup', {
+    method: 'POST',
+    headers: { apikey: CLOUD.key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: login, password: pass })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(authError(j));
+  const uidNew = (j.user && j.user.id) || j.id;
+  if (!uidNew) throw new Error('Сервер не вернул идентификатор аккаунта');
+  const rr = await api('/rest/v1/pupil', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates' },
+    body: JSON.stringify({ uid: uidNew, tutor: AUTH.uid(), sid: s.id, login: login })
+  });
+  if (!rr.ok) throw new Error('Не удалось привязать аккаунт (код ' + rr.status + ')');
+  accessMap()[s.id] = { uid: uidNew, login: login, at: todayKey() };
+  save();
+  delete pupilCache[s.id];
+  await pushPupils();
+  return { login: login, pass: pass };
+}
+
+async function revokeAccess(s) {
+  const a = accessOf(s);
+  if (!a) return;
+  await api('/rest/v1/pupil?uid=eq.' + a.uid, { method: 'DELETE' });
+  await api('/rest/v1/pupil_data?tutor=eq.' + AUTH.uid() + '&sid=eq.' + encodeURIComponent(s.id), { method: 'DELETE' });
+  delete accessMap()[s.id];
+  delete pupilCache[s.id];
+  save();
+}
+
+/* ---------- окно «Доступ ученика» ---------- */
+
+function memoText(s, login, pass) {
+  return 'Личный кабинет ученика\n' + pupilUrl()
+    + '\nЛогин: ' + login + '\nПароль: ' + pass
+    + '\n\nТам видно расписание, домашние задания с оценками, результаты работ и пройденные темы.';
+}
+
+function accessModal(s) {
+  const a = accessOf(s);
+  const body = a
+    ? `<div class="ac-box">
+         <div><span class="muted small">Логин</span><div class="ac-val" id="acLogin">${esc(a.login)}</div></div>
+         <div class="muted small" style="margin-top:8px">Доступ выдан ${esc(dateText(a.at) || a.at || '')}. Пароль показывается только в момент выдачи — если он потерян, выпустите новый.</div>
+       </div>
+       <div class="muted small" style="margin-top:12px">Адрес кабинета: <a href="${esc(pupilUrl())}" target="_blank" rel="noopener">${esc(pupilUrl())}</a></div>`
+    : `<div class="muted">У ученика пока нет доступа. Кабинет открывается только на просмотр: расписание и посещаемость, домашние задания с оценками, контрольные и пробники, пройденные темы, файлы с формулами.
+       <br><br>Стоимость занятий, оплаты, долги и данные других учеников туда не передаются.</div>`;
+
+  openModal(`<div class="modal-head"><h3>Доступ ученика · ${esc(s.name)}</h3></div>
+    <div class="modal-body" id="acBody">${body}</div>
+    <div class="modal-foot">
+      <button class="btn" data-close>Закрыть</button>
+      ${a ? '<button class="btn btn-danger" id="acRevoke">Закрыть доступ</button><button class="btn" id="acNew">Новый пароль</button>'
+          : '<button class="btn btn-primary" id="acGrant">Выдать доступ</button>'}
+    </div>`);
+
+  const showResult = (login, pass) => {
+    $('#acBody').innerHTML = `<div class="ac-box ok">
+        <div class="ac-row"><span class="muted small">Адрес</span><div class="ac-val">${esc(pupilUrl())}</div></div>
+        <div class="ac-row"><span class="muted small">Логин</span><div class="ac-val">${esc(login)}</div></div>
+        <div class="ac-row"><span class="muted small">Пароль</span><div class="ac-val">${esc(pass)}</div></div>
+      </div>
+      <div class="muted small" style="margin-top:10px">Перешлите это ученику или родителю. Пароль нигде не сохраняется — после закрытия окна его будет не посмотреть.</div>
+      <button class="btn" id="acCopy" style="margin-top:12px">Скопировать памятку</button>`;
+    $('#acCopy').onclick = () => {
+      const t = memoText(s, login, pass);
+      if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('Скопировано'), () => toast('Не удалось скопировать'));
+      else toast('Не удалось скопировать');
+    };
+    const foot = $('#modal .modal-foot');
+    if (foot) foot.innerHTML = '<button class="btn btn-primary" data-close>Готово</button>';
+  };
+
+  const issue = async btn => {
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Создаю…';
+    try {
+      if (accessOf(s)) await revokeAccess(s);
+      const res = await grantAccess(s);
+      showResult(res.login, res.pass);
+      render(true);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = old;
+      $('#acBody').insertAdjacentHTML('afterbegin', '<div class="err-box">' + esc(e.message || 'Ошибка') + '</div>');
+    }
+  };
+
+  if ($('#acGrant')) $('#acGrant').onclick = e => issue(e.target);
+  if ($('#acNew')) $('#acNew').onclick = e => issue(e.target);
+  if ($('#acRevoke')) $('#acRevoke').onclick = async e => {
+    e.target.disabled = true;
+    try {
+      await revokeAccess(s);
+      closeModal(); render(true); toast('Доступ закрыт');
+    } catch (err) {
+      e.target.disabled = false;
+      $('#acBody').insertAdjacentHTML('afterbegin', '<div class="err-box">Не удалось закрыть доступ</div>');
+    }
   };
 }
 /* =========================================================
