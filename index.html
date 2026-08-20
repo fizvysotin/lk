@@ -230,13 +230,18 @@ select.grade-sel{width:auto;min-width:64px;padding:5px 8px;font-weight:700;text-
 .topics-box{border-radius:var(--radius-sm);overflow:hidden}
 .topics-box > summary{
   list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:10px 12px;border-radius:var(--radius-sm);background:var(--surface-2);
-  border:1px solid var(--line);font-size:14px;
+  padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface-2);
+  border:1px solid var(--brand);font-size:14px;box-shadow:inset 3px 0 0 var(--brand);
 }
 .topics-box > summary::-webkit-details-marker{display:none}
-.topics-box > summary::before{content:'▸';color:var(--muted);font-size:12px;transition:transform .15s}
-.topics-box[open] > summary::before{transform:rotate(90deg)}
+.topics-box > summary::before{content:'▾';color:var(--brand);font-size:15px;font-weight:700;line-height:1;transition:transform .15s}
+.topics-box[open] > summary::before{transform:rotate(180deg)}
 .topics-box > summary:hover{background:var(--surface-3)}
+.tb-hint{font-size:12px;color:var(--brand);font-weight:600;white-space:nowrap}
+.topics-box[open] .tb-hint::after{content:'свернуть'}
+.topics-box:not([open]) .tb-hint::after{content:'развернуть'}
+.tb-hint{font-size:0}
+.tb-hint::after{font-size:12px}
 .tb-title{font-weight:700}
 .tb-sum{color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums}
 .tb-bar{flex:1;min-width:80px;height:7px;border-radius:4px;background:var(--surface-3);overflow:hidden}
@@ -561,7 +566,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .header-tools,body.auth-m
 'use strict';
 
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '2.3 · 20 августа 2026, 06:00';
+const APP_VERSION = '2.4 · 20 августа 2026, 14:00';
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -2360,7 +2365,8 @@ function viewProgress() {
   </div>
 
   ${progStudent !== 'all' && student(progStudent)
-      ? `<div class="card" id="progTopics">${topicsPanel(student(progStudent))}</div>` : ''}`;
+      ? `<div class="card" id="progTopics">${topicsPanel(student(progStudent))}</div>`
+      : '<div class="card"><div class="empty small">Пройденные темы показываются, когда выбран конкретный ученик — выберите его в списке вверху страницы.</div></div>'}`;
 
   $('#pStudent').onchange = e => { progStudent = e.target.value; render(true); };
   if (progStudent !== 'all' && student(progStudent)) {
@@ -2750,6 +2756,7 @@ function topicsPanel(s) {
       <span class="tb-title">Пройденные темы</span>
       <span class="tb-sum" data-tp-sum>${p ? done + ' из ' + total + ' · ' + pct + '%' : 'программа не выбрана'}</span>
       <span class="tb-bar"><i data-tp-bar style="width:${pct}%"></i></span>
+      <span class="tb-hint">развернуть</span>
     </summary>
     <div class="topics-body">${body}</div>
   </details>`;
