@@ -507,7 +507,27 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .banner{display:none}
   body{font-size:14.5px}
   .wrap{padding:0 11px}
   .banner-media{aspect-ratio:1500 / 800;background-image:url(../assets/head-mobile.jpg)}
-  .banner-name{top:76.5%;left:50%;font-size:max(12px,3.1cqw)}
+  .banner-name{top:79.5%;left:50%;font-size:max(12px,3cqw)}
+
+  /* таблица домашних заданий превращается в карточки */
+  table.hw-tbl thead{display:none}
+  table.hw-tbl,table.hw-tbl tbody{display:block}
+  table.hw-tbl tr{
+    display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px;
+    border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--surface-2);padding:10px 12px;margin-bottom:8px;
+  }
+  table.hw-tbl td{display:block;border:0;padding:0}
+  table.hw-tbl tbody tr:hover{background:var(--surface-2)}
+  table.hw-tbl td.c-text{flex:1 1 100%;order:1;font-weight:600;line-height:1.35;white-space:normal}
+  table.hw-tbl td.c-date{display:none}
+  table.hw-tbl td.c-due{order:2;font-size:12px;color:var(--muted)}
+  table.hw-tbl td.c-due::before{content:'срок '}
+  table.hw-tbl td.c-status{order:4;margin-left:auto}
+  table.hw-tbl td.c-grade{order:5;font-size:13px;font-weight:700;white-space:nowrap}
+  table.hw-tbl td.c-grade::before{content:'оценка ';font-weight:500;color:var(--muted)}
+  table.hw-tbl td.c-grade[data-none]{color:var(--muted);font-weight:500}
+  table.hw-tbl td.c-grade[data-none]::before{content:''}
   .nav-inner{flex-wrap:wrap}
   .header-tools{width:100%;padding:0 0 8px;margin:0;border-left:0;justify-content:flex-end}
   .days{grid-template-columns:1fr}
@@ -969,13 +989,14 @@ function viewProg() {
 
   <div class="card" style="margin-bottom:14px">
     <div class="card-title">Домашние задания</div>
-    ${hw.length ? `<table class="tbl"><thead><tr><th>Задано</th><th>Срок</th><th>Задание</th><th>Статус</th><th>Оценка</th></tr></thead>
+    ${hw.length ? `<div class="tbl-wrap"><table class="tbl hw-tbl">
+      <thead><tr><th>Задано</th><th>Срок</th><th>Задание</th><th>Статус</th><th>Оценка</th></tr></thead>
       <tbody>${hw.map(h => `<tr>
-        <td class="nowrap">${h.date ? fmtShort(h.date) : '—'}</td>
-        <td class="nowrap">${h.due ? fmtShort(h.due) : '—'}</td>
-        <td>${esc(h.text)}</td>
-        <td>${h.done ? '<span class="badge badge-good">✓ выполнено</span>' : '<span class="badge badge-warn">не сдано</span>'}</td>
-        <td>${h.grade ? '<b>' + h.grade + '</b>' : '—'}</td></tr>`).join('')}</tbody></table>`
+        <td class="nowrap c-date">${h.date ? fmtShort(h.date) : '—'}</td>
+        <td class="nowrap c-due">${h.due ? fmtShort(h.due) : '—'}</td>
+        <td class="c-text">${esc(h.text)}</td>
+        <td class="c-status">${h.done ? '<span class="badge badge-good">✓ выполнено</span>' : '<span class="badge badge-warn">не сдано</span>'}</td>
+        <td class="c-grade"${h.grade ? '' : ' data-none'}>${h.grade ? '<b>' + h.grade + '</b>' : '—'}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty">Домашних заданий пока нет</div>'}
   </div>
 
