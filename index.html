@@ -371,6 +371,8 @@ textarea{resize:vertical;min-height:64px}
   cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);display:inline-flex;gap:4px;align-items:center;
 }
 .pay-btn.on{background:var(--st-good);border-color:var(--st-good);color:#fff}
+.paylist{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.pay-btn.pay-one{font-size:11.5px;padding:3px 8px;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lsn-more{margin-left:auto;color:var(--muted);border:0;background:none;cursor:pointer;padding:2px 5px;border-radius:6px;font-size:14px}
 .lsn-more:hover{background:var(--surface-3);color:var(--ink)}
 
@@ -635,7 +637,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
    ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
    ========================================================= */
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '3.1 · 21 августа 2026, 13:00';
+const APP_VERSION = '3.2 · 3 сентября 2026, 12:00';
 const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
 const moneyShort = n => {
   n = Math.round(n || 0);
@@ -665,7 +667,7 @@ function defaultDB() {
     students: [],
     groups: [],
     slots: [],
-    extra: [],   // разовые занятия (не используется)
+    extra: [],   // отдельные занятия и сохранённая история изменённых шаблонов
     links: [],   // свои полезные ссылки
     files: [],   // имена загруженных файлов
     hw: [],      // домашние задания
@@ -733,6 +735,7 @@ const avatarColor = name => {
   let h = 0; for (let i = 0; i < String(name).length; i++) h = (h * 31 + name.charCodeAt(i)) % 9973;
   return hues[h % hues.length];
 };
+const firstName = name => String(name || '').trim().split(/\s+/)[0] || '—';
 const initials = name => String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
 /* ---------- занятия (генерация из шаблона + разовые) ---------- */
@@ -740,25 +743,68 @@ function occId(slotId, dateKey) { return slotId + '@' + dateKey; }
 
 function markOf(id) { return DB.marks[id] || null; }
 
+/** Кто участвует в занятии: для группы — её состав, для индивидуального — сам ученик */
+function membersOf(kind, refId) {
+  if (kind === 'group') {
+    const g = group(refId);
+    return g ? (g.studentIds || []).filter(id => student(id)) : [];
+  }
+  return student(refId) ? [refId] : [refId];
+}
+
 function buildOcc(base) {
   const m = markOf(base.id) || {};
   const price = m.price != null ? m.price : (base.price != null ? base.price : defaultPriceFor(base.kind, base.refId, base.dur));
+  const members = membersOf(base.kind, base.refId);
+  const n = Math.max(1, members.length);
+  const perOne = Math.round(price / n);
+  // в группе оплату отмечаем по каждому ученику отдельно, у индивидуального — одна галочка
+  const payMap = {};
+  if (base.kind === 'group') members.forEach(id => { if (m.pay && m.pay[id]) payMap[id] = 1; });
+  else if (m.paid) members.forEach(id => payMap[id] = 1);
+  const paidIds = members.filter(id => payMap[id]);
+  const allPaid = base.kind === 'group' ? (members.length > 0 && paidIds.length === members.length) : !!m.paid;
   return Object.assign({}, base, {
     price: price,
     st: m.st || 'plan',
-    paid: !!m.paid,
+    paid: allPaid,
+    members: members,
+    payMap: payMap,
+    paidIds: paidIds,
+    perOne: perOne,
+    recv: allPaid ? price : perOne * paidIds.length,
     note: m.note || '',
     time: m.time || base.time
   });
+}
+
+/** Отметить оплату одного ученика (в группе — только его доли) */
+function setPaid(o, studentId, val) {
+  if (o.kind !== 'group') { setMark(o.id, { paid: !!val }); return; }
+  const cur = DB.marks[o.id] || {};
+  const pay = Object.assign({}, cur.pay || {});
+  if (val) pay[studentId] = 1; else delete pay[studentId];
+  setMark(o.id, { pay: Object.keys(pay).length ? pay : null });
+}
+/** Отметить оплату всего занятия целиком */
+function setPaidAll(o, val) {
+  if (o.kind !== 'group') { setMark(o.id, { paid: !!val }); return; }
+  if (!val) { setMark(o.id, { pay: null }); return; }
+  const pay = {}; o.members.forEach(id => pay[id] = 1);
+  setMark(o.id, { pay: pay });
 }
 
 /** Все занятия в диапазоне дат (включительно), отсортированы по дате и времени */
 function occurrences(fromKey, toKey) {
   const out = [];
   const from = parseKey(fromKey), to = parseKey(toKey);
+  // сохранённая история: если занятие уже «заморожено», шаблон его больше не создаёт
+  const frozen = {};
+  DB.extra.forEach(e => { frozen[e.id] = 1; });
   for (let d = new Date(from); d <= to; d = addDays(d, 1)) {
     const k = key(d), wd = wdIdx(d);
     DB.slots.forEach(sl => {
+      if (frozen[occId(sl.id, k)]) return;
       if (sl.wd !== wd) return;
       if (sl.archived) return;
       if (sl.from && k < sl.from) return;
@@ -788,13 +834,58 @@ function monthOcc(mk) {
 
 const isCharged = o => CHARGED.indexOf(o.st) >= 0;
 const charged = o => isCharged(o) ? o.price : 0;
-const received = o => (isCharged(o) && o.paid) ? o.price : 0;
+const received = o => isCharged(o) ? o.recv : 0;
 
 function totals(list) {
   const t = { charged: 0, received: 0, debt: 0, done: 0, miss: 0, move: 0, cancel: 0, plan: 0, lessons: 0, minutes: 0 };
   list.forEach(o => {
     t[o.st] = (t[o.st] || 0) + 1;
-    if (isCharged(o)) { t.lessons++; t.charged += o.price; t.minutes += (o.dur || 60); if (o.paid) t.received += o.price; }
+    if (isCharged(o)) { t.lessons++; t.charged += o.price; t.minutes += (o.dur || 60); t.received += o.recv; }
+  });
+  t.debt = t.charged - t.received;
+  t.tax = Math.round(t.charged * (DB.settings.taxRate || 0) / 100);
+  t.net = t.charged - t.tax;
+  t.avg = t.lessons ? Math.round(t.charged / t.lessons) : 0;
+  return t;
+}
+
+/** Перед правкой или удалением шаблона сохраняем уже отмеченные занятия как разовые,
+    чтобы прошлые недели остались в расписании и отчётах */
+function freezeSlotHistory(sl, upTo) {
+  if (!sl) return 0;
+  if (!DB.extra) DB.extra = [];
+  const have = {}; DB.extra.forEach(e => have[e.id] = 1);
+  const end = parseKey(upTo || todayKey());
+  let d = parseKey(sl.from || key(addDays(new Date(), -730)));
+  let n = 0;
+  for (; d <= end; d = addDays(d, 1)) {
+    if (wdIdx(d) !== sl.wd) continue;
+    const k = key(d);
+    if (sl.to && k > sl.to) break;
+    const id = occId(sl.id, k);
+    const m = DB.marks[id];
+    if (!m || have[id]) continue;
+    DB.extra.push({
+      id: id, date: k, time: m.time || sl.time, dur: sl.dur || 60,
+      kind: sl.kind, refId: sl.refId, subject: sl.subject,
+      price: m.price != null ? m.price : (sl.price != null ? sl.price : defaultPriceFor(sl.kind, sl.refId, sl.dur)),
+      fromSlot: sl.id
+    });
+    have[id] = 1; n++;
+  }
+  return n;
+}
+
+/** Итоги по одному ученику: в группе учитывается только его доля */
+function totalsOf(list, studentId) {
+  const t = { charged: 0, received: 0, debt: 0, done: 0, miss: 0, move: 0, cancel: 0, plan: 0, lessons: 0, minutes: 0 };
+  list.forEach(o => {
+    if (!o.members || o.members.indexOf(studentId) < 0) return;
+    t[o.st] = (t[o.st] || 0) + 1;
+    if (isCharged(o)) {
+      t.lessons++; t.charged += o.perOne; t.minutes += (o.dur || 60);
+      if (o.payMap[studentId]) t.received += o.perOne;
+    }
   });
   t.debt = t.charged - t.received;
   t.tax = Math.round(t.charged * (DB.settings.taxRate || 0) / 100);
@@ -808,6 +899,7 @@ function setMark(id, patch) {
   const next = Object.assign({}, cur, patch);
   if (!next.st || next.st === 'plan') delete next.st;
   if (!next.paid) delete next.paid;
+  if (!next.pay || !Object.keys(next.pay).length) delete next.pay;
   if (!next.note) delete next.note;
   if (Object.keys(next).length === 0) delete DB.marks[id]; else DB.marks[id] = next;
   save();
@@ -1497,7 +1589,13 @@ function lessonCard(o) {
     `<button data-s="${s}" class="${o.st === s ? 'on' : ''}" title="${STATUS[s].label}" data-act="st">${STATUS[s].icon}</button>`).join('')}
       </span>
       ${o.st === 'move' || o.st === 'cancel' ? '<span class="muted small">не оплачивается</span>'
-      : `<button class="pay-btn ${o.paid ? 'on' : ''}" data-act="pay" title="${paidTitle}">₽ ${o.paid ? 'оплачено' : 'не опл.'}</button>`}
+      : (o.kind === 'group'
+        ? `<span class="paylist">${o.members.map(id => {
+            const st = student(id); if (!st) return '';
+            return `<button class="pay-btn pay-one ${o.payMap[id] ? 'on' : ''}" data-act="pay1" data-sid="${id}"
+              title="${esc(st.name)} · ${o.payMap[id] ? 'оплатил' : 'не оплатил'} ${money(o.perOne)}">${esc(firstName(st.name))}</button>`;
+          }).join('') || '<span class="muted small">состав группы не задан</span>'}</span>`
+        : `<button class="pay-btn ${o.paid ? 'on' : ''}" data-act="pay" title="${paidTitle}">₽ ${o.paid ? 'оплачено' : 'не опл.'}</button>`)}
       ${o.note ? '<span class="badge" title="' + esc(o.note) + '">📝</span>' : ''}
       <button class="lsn-more" data-act="more" title="Подробнее">⋮</button>
     </div>
@@ -1603,6 +1701,11 @@ function viewWeek() {
         setMark(id, { paid: !o.paid });
         if (!o.paid) toast('Оплата отмечена: ' + money(o.price));
         render();
+      } else if (act === 'pay1') {
+        const sid = b.dataset.sid, was = !!o.payMap[sid];
+        setPaid(o, sid, !was);
+        if (!was) toast(firstName((student(sid) || {}).name) + ' — оплата ' + money(o.perOne));
+        render();
       } else if (act === 'more') {
         lessonModal(o);
       }
@@ -1632,43 +1735,76 @@ function lessonModal(o) {
       </div>
       <div class="field"><label>Статус</label>
         <select id="lSt">${Object.keys(STATUS).map(s => `<option value="${s}" ${o.st === s ? 'selected' : ''}>${STATUS[s].icon} ${STATUS[s].label}</option>`).join('')}</select></div>
-      <label class="chk ${o.paid ? 'on' : ''} ${o.st === 'move' || o.st === 'cancel' ? 'hidden' : ''}" id="lPaidWrap"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>
+      <div class="${o.st === 'move' || o.st === 'cancel' ? 'hidden' : ''}" id="lPaidWrap">
+        ${o.kind === 'group'
+          ? `<label>Оплата по ученикам · ${money(o.perOne)} с человека</label>
+             <div class="checks">${o.members.map(id => { const st = student(id); return st
+               ? `<label class="chk ${o.payMap[id] ? 'on' : ''}"><input type="checkbox" class="lPay1" value="${id}" ${o.payMap[id] ? 'checked' : ''}> ${esc(st.name)}</label>`
+               : ''; }).join('') || '<span class="muted small">Состав группы не задан</span>'}</div>`
+          : `<label class="chk ${o.paid ? 'on' : ''}" id="lPaidOne"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>`}
+      </div>
       <div class="muted small ${o.st === 'move' || o.st === 'cancel' ? '' : 'hidden'}" id="lNoPay">Перенос и отмена не оплачиваются</div>
       <div class="field" style="margin-top:12px"><label>Заметка к занятию</label>
         <textarea id="lNote" placeholder="Что прошли, что задать к следующему разу…">${esc(o.note)}</textarea></div>
 
-      <div class="card" style="background:var(--surface-2);margin-top:16px;box-shadow:none">
+      ${!o.slotId || !slotOf(o.slotId) ? `<div class="card" style="background:var(--surface-2);margin-top:16px;box-shadow:none">
+        <div class="card-title">Отдельное занятие</div>
+        <div class="muted small" style="margin:3px 0 10px">Не из постоянного расписания — стоит только в этот день</div>
+        <button class="btn btn-sm btn-danger" id="lDelOne">Удалить занятие</button>
+      </div>` : ''}
+      ${o.slotId && slotOf(o.slotId) ? `<div class="card" style="background:var(--surface-2);margin-top:16px;box-shadow:none">
         <div class="card-title">Постоянное занятие</div>
-        <div class="muted small" style="margin:3px 0 10px">Повторяется каждую неделю: ${DAYS_FULL[wdIdx(d)].toLowerCase()}, ${esc(slotOf(o.slotId) ? slotOf(o.slotId).time : o.time)}</div>
+        <div class="muted small" style="margin:3px 0 10px">Повторяется каждую неделю: ${DAYS_FULL[wdIdx(d)].toLowerCase()}, ${esc(slotOf(o.slotId).time)}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-sm" id="lEditSlot">Изменить расписание</button>
           <button class="btn btn-sm btn-danger" id="lDelSlot">Убрать из расписания</button>
         </div>
-      </div>
+        <div class="muted small" style="margin-top:9px">Прошедшие отмеченные занятия останутся в расписании и отчётах, даже если убрать или изменить это правило.</div>
+      </div>` : ''}
     </div>
     <div class="modal-foot">
       <button class="btn" data-close>Отмена</button>
       <button class="btn btn-primary" id="lSave">Сохранить</button>
     </div>`);
 
-  $('#lPaid').onchange = e => $('#lPaidWrap').classList.toggle('on', e.target.checked);
+  if ($('#lPaid')) $('#lPaid').onchange = e => $('#lPaidOne').classList.toggle('on', e.target.checked);
+  $$('.lPay1').forEach(c => c.onchange = e => e.target.closest('.chk').classList.toggle('on', e.target.checked));
   $('#lSt').onchange = e => {
     const free = e.target.value === 'move' || e.target.value === 'cancel';
     $('#lPaidWrap').classList.toggle('hidden', free);
     $('#lNoPay').classList.toggle('hidden', !free);
-    if (free) { $('#lPaid').checked = false; $('#lPaidWrap').classList.remove('on'); }
+    if (free) {
+      if ($('#lPaid')) { $('#lPaid').checked = false; $('#lPaidOne').classList.remove('on'); }
+      $$('.lPay1').forEach(c => { c.checked = false; c.closest('.chk').classList.remove('on'); });
+    }
   };
-  $('#lEditSlot').onclick = () => { closeModal(); slotModal(slotOf(o.slotId)); };
-  $('#lDelSlot').onclick = () => confirmBox('Убрать «' + targetName(o.kind, o.refId) + '» из расписания по '
-    + DAYS_FULL[wdIdx(d)].toLowerCase() + 'м? Отметки за прошедшие недели сохранятся в отчётах, но занятие пропадёт из расписания.', () => {
+  if ($('#lDelOne')) $('#lDelOne').onclick = () => confirmBox('Удалить занятие ' + fmtDate(d) + ' у «'
+    + targetName(o.kind, o.refId) + '»? Отметка о нём тоже пропадёт.', () => {
+      DB.extra = (DB.extra || []).filter(e => e.id !== o.id);
+      delete DB.marks[o.id];
+      save(); closeModal(); render(true); toast('Занятие удалено');
+    }, 'Удалить');
+  if ($('#lEditSlot')) $('#lEditSlot').onclick = () => { closeModal(); slotModal(slotOf(o.slotId)); };
+  if ($('#lDelSlot')) $('#lDelSlot').onclick = () => confirmBox('Убрать «' + targetName(o.kind, o.refId) + '» из расписания по '
+    + DAYS_FULL[wdIdx(d)].toLowerCase() + 'м? Прошедшие отмеченные занятия останутся на своих местах, пропадут только будущие.', () => {
+      const n = freezeSlotHistory(slotOf(o.slotId));
       DB.slots = DB.slots.filter(x => x.id !== o.slotId);
-      save(); closeModal(); render(true); toast('Убрано из расписания');
+      save(); closeModal(); render(true);
+      toast(n ? 'Убрано из расписания · сохранено занятий: ' + n : 'Убрано из расписания');
     }, 'Убрать');
   $('#lSave').onclick = () => {
-    setMark(o.id, {
-      st: $('#lSt').value, paid: $('#lPaid').checked, note: $('#lNote').value,
+    const patch = {
+      st: $('#lSt').value, note: $('#lNote').value,
       price: +$('#lPrice').value || 0, time: $('#lTime').value
-    });
+    };
+    if (o.kind === 'group') {
+      const pay = {};
+      $$('.lPay1').filter(c => c.checked).forEach(c => pay[c.value] = 1);
+      patch.pay = Object.keys(pay).length ? pay : null;
+    } else {
+      patch.paid = $('#lPaid') ? $('#lPaid').checked : false;
+    }
+    setMark(o.id, patch);
     save(); closeModal(); render(true); toast('Сохранено');
   };
 }
@@ -1716,9 +1852,19 @@ function slotModal(s, wd, fromDate) {
       dur: +$('#sDur').value || 60, subject: $('#sSubj').value, price: +$('#sPrice').value || 0,
       from: $('#sFrom').value || null, to: $('#sTo').value || null, archived: false
     };
+    let saved = 0;
     if (isNew) DB.slots.push(Object.assign({ id: 's' + uid() }, data));
-    else Object.assign(s, data);
-    save(); closeModal(); render(); toast('Расписание обновлено');
+    else {
+      saved = freezeSlotHistory(s);
+      // сменили день или участника — новое правило действует с сегодняшнего дня,
+      // иначе занятия «появились бы» в уже прошедших неделях
+      const moved = s.wd !== data.wd || s.refId !== data.refId || s.kind !== data.kind;
+      const fromUntouched = (s.from || '') === (data.from || '');
+      if (moved && fromUntouched && (data.from || '9999') < todayKey()) data.from = todayKey();
+      Object.assign(s, data);
+    }
+    save(); closeModal(); render(true);
+    toast(saved ? 'Расписание обновлено · прошлое сохранено (' + saved + ')' : 'Расписание обновлено');
   };
 }
 /* =========================================================
@@ -1729,7 +1875,7 @@ let stFilter = { q: '', mode: 'active' };
 function studentStats(id, mk) {
   const occ = monthOcc(mk || dashMonth).filter(o => (o.kind === 'student' && o.refId === id)
     || (o.kind === 'group' && (group(o.refId) || { studentIds: [] }).studentIds.indexOf(id) >= 0));
-  return totals(occ);
+  return totalsOf(occ, id);
 }
 function slotsOf(kind, refId) {
   return DB.slots.filter(s => !s.archived && s.kind === kind && s.refId === refId)
@@ -1914,7 +2060,7 @@ function studentCard(s) {
   const from = key(addDays(new Date(), -120)), to = key(addDays(new Date(), 14));
   const hist = occurrences(from, to).filter(o => (o.kind === 'student' && o.refId === s.id)
     || (o.kind === 'group' && (group(o.refId) || { studentIds: [] }).studentIds.indexOf(s.id) >= 0)).reverse();
-  const t = totals(hist);
+  const t = totalsOf(hist, s.id);
   const tm = studentStats(s.id);
   openModal(`
     <div class="modal-head">
@@ -1940,8 +2086,8 @@ function studentCard(s) {
           <td class="nowrap muted">${esc(o.time)}</td>
           <td>${subjBadge(o.subject)}</td>
           <td><span class="badge ${STATUS[o.st].cls}">${STATUS[o.st].icon} ${STATUS[o.st].label}</span></td>
-          <td class="num nowrap">${isCharged(o) ? money(o.price) : '—'}</td>
-          <td class="nowrap">${isCharged(o) ? (o.paid ? '<span class="badge badge-good">оплачено</span>' : '<span class="badge badge-crit">долг</span>') : ''}</td>
+          <td class="num nowrap">${isCharged(o) ? money(o.perOne) : '—'}</td>
+          <td class="nowrap">${isCharged(o) ? (o.payMap[s.id] ? '<span class="badge badge-good">оплачено</span>' : '<span class="badge badge-crit">долг</span>') : ''}</td>
         </tr>`).join('') : '<tr><td class="muted">Занятий пока нет</td></tr>'}
         </tbody></table>
       </div>
@@ -3198,16 +3344,24 @@ function viewMoney() {
   const t = totals(occ);
   const tm = totals(monthOcc(dashMonth));
 
-  const byRef = {};
+  // долги считаем по каждому ученику: доля в группе — своя у каждого
+  const byStudent = {};
   occ.forEach(o => {
-    const k = o.kind + ':' + o.refId;
-    if (!byRef[k]) byRef[k] = { key: k, kind: o.kind, refId: o.refId, name: targetName(o.kind, o.refId), charged: 0, paid: 0, n: 0, nUnpaid: 0, last: '' };
-    const r = byRef[k];
-    r.charged += o.price; r.n++;
-    if (o.paid) r.paid += o.price; else { r.nUnpaid++; }
-    if (o.date > r.last) r.last = o.date;
+    o.members.forEach(id => {
+      if (!byStudent[id]) byStudent[id] = {
+        id: id, name: (student(id) || {}).name || 'Ученик', charged: 0, paid: 0, n: 0, nUnpaid: 0, last: '', groups: {}
+      };
+      const r = byStudent[id];
+      r.charged += o.perOne; r.n++;
+      if (o.payMap[id]) r.paid += o.perOne; else r.nUnpaid++;
+      if (o.kind === 'group') r.groups[targetName(o.kind, o.refId)] = 1;
+      if (o.date > r.last) r.last = o.date;
+    });
   });
-  const rows = Object.values(byRef).map(r => (r.debt = r.charged - r.paid, r)).sort((a, b) => b.debt - a.debt || b.charged - a.charged);
+  const rows = Object.values(byStudent).map(r => (r.debt = r.charged - r.paid, r)).sort((a, b) => b.debt - a.debt || b.charged - a.charged);
+  // список неоплаченных: отдельная строка на каждого должника занятия
+  const owed = [];
+  occ.slice().reverse().forEach(o => o.members.forEach(id => { if (!o.payMap[id]) owed.push({ o: o, id: id }); }));
 
   $('#app').innerHTML = `
   <div class="page-head">
@@ -3216,7 +3370,7 @@ function viewMoney() {
   </div>
   <div class="grid cols-4" style="margin-bottom:14px">
     <div class="stat"><div class="label">Общий долг</div><div class="value" style="${t.debt ? 'color:var(--st-crit)' : ''}">${moneyShort(t.debt)}<small> ₽</small></div>
-      <div class="delta">${unpaid.length} ${plural(unpaid.length, 'занятие', 'занятия', 'занятий')} без оплаты</div></div>
+      <div class="delta">${owed.length} ${plural(owed.length, 'оплата', 'оплаты', 'оплат')} не отмечено</div></div>
     <div class="stat"><div class="label">Получено за ${MONTHS_N[+dashMonth.slice(5, 7) - 1].toLowerCase()}</div><div class="value">${moneyShort(tm.received)}<small> ₽</small></div>
       <div class="delta">из ${money(tm.charged)} начисленных</div></div>
     <div class="stat"><div class="label">Собираемость</div><div class="value">${t.charged ? Math.round(t.received / t.charged * 100) : 100}%</div>
@@ -3226,20 +3380,20 @@ function viewMoney() {
   </div>
 
   <div class="card">
-    <div class="card-head"><div><div class="card-title">По ученикам и группам</div>
-      <div class="card-sub">Кнопка «Закрыть долг» отмечает оплаченными все занятия ученика</div></div></div>
+    <div class="card-head"><div><div class="card-title">По ученикам</div>
+      <div class="card-sub">Занятия в группе делятся поровну — у каждого своя доля и свой долг</div></div></div>
     <div class="tbl-wrap">
       <table class="tbl">
         <thead><tr><th>Кто</th><th class="num">Занятий</th><th class="num">Начислено</th><th class="num">Оплачено</th><th class="num">Долг</th><th>Последнее</th><th></th></tr></thead>
         <tbody>
         ${rows.length ? rows.map(r => `<tr>
-          <td><b>${esc(r.name)}</b> ${r.kind === 'group' ? '<span class="badge badge-g">группа</span>' : ''}</td>
+          <td><b>${esc(r.name)}</b> ${Object.keys(r.groups).map(g => '<span class="badge badge-g">' + esc(g) + '</span>').join(' ')}</td>
           <td class="num">${r.n}</td>
           <td class="num">${money(r.charged)}</td>
           <td class="num">${money(r.paid)}</td>
           <td class="num"><b style="${r.debt ? 'color:var(--st-crit)' : 'color:var(--st-good)'}">${money(r.debt)}</b></td>
           <td class="nowrap muted small">${r.last ? fmtDate(parseKey(r.last)) : ''}</td>
-          <td>${r.debt ? '<button class="btn btn-sm" data-payall="' + r.key + '">Закрыть долг</button>' : '<span class="badge badge-good">✓</span>'}</td>
+          <td>${r.debt ? '<button class="btn btn-sm" data-payall="' + r.id + '">Закрыть долг</button>' : '<span class="badge badge-good">✓</span>'}</td>
         </tr>`).join('') : '<tr><td colspan="7" class="muted">Пока нет проведённых занятий</td></tr>'}
         </tbody>
       </table>
@@ -3251,26 +3405,31 @@ function viewMoney() {
       <div class="card-sub">Нажмите ₽, чтобы отметить оплату</div></div></div>
     <div class="tbl-wrap" style="max-height:460px;overflow-y:auto">
       <table class="tbl"><tbody>
-      ${unpaid.length ? unpaid.slice(0, 120).map(o => `<tr>
-        <td class="nowrap">${fmtDate(parseKey(o.date))} <span class="muted">${DAYS_SHORT[wdIdx(parseKey(o.date))]}</span></td>
-        <td class="nowrap muted">${esc(o.time)}</td>
-        <td>${subjBadge(o.subject)}</td>
-        <td><b>${esc(targetName(o.kind, o.refId))}</b></td>
-        <td><span class="badge ${STATUS[o.st].cls}">${STATUS[o.st].icon} ${STATUS[o.st].label}</span></td>
-        <td class="num nowrap">${money(o.price)}</td>
-        <td><button class="pay-btn" data-pay1="${esc(o.id)}">₽ оплачено</button></td>
+      ${owed.length ? owed.slice(0, 150).map(x => `<tr>
+        <td class="nowrap">${fmtDate(parseKey(x.o.date))} <span class="muted">${DAYS_SHORT[wdIdx(parseKey(x.o.date))]}</span></td>
+        <td class="nowrap muted">${esc(x.o.time)}</td>
+        <td>${subjBadge(x.o.subject)}</td>
+        <td><b>${esc((student(x.id) || {}).name || 'Ученик')}</b>${x.o.kind === 'group' ? ' <span class="badge badge-g">' + esc(targetName(x.o.kind, x.o.refId)) + '</span>' : ''}</td>
+        <td><span class="badge ${STATUS[x.o.st].cls}">${STATUS[x.o.st].icon} ${STATUS[x.o.st].label}</span></td>
+        <td class="num nowrap">${money(x.o.perOne)}</td>
+        <td><button class="pay-btn" data-pay1="${esc(x.o.id)}" data-sid="${esc(x.id)}">₽ оплачено</button></td>
       </tr>`).join('') : '<tr><td class="muted">Долгов нет — красота 🎉</td></tr>'}
       </tbody></table>
     </div>
   </div>`;
 
-  $$('[data-pay1]').forEach(b => b.onclick = () => { setMark(b.dataset.pay1, { paid: true }); toast('Оплата отмечена'); render(); });
+  $$('[data-pay1]').forEach(b => b.onclick = () => {
+    const o = occ.find(x => x.id === b.dataset.pay1); if (!o) return;
+    setPaid(o, b.dataset.sid, true); toast('Оплата отмечена'); render();
+  });
   $$('[data-payall]').forEach(b => b.onclick = () => {
-    const [kind, refId] = b.dataset.payall.split(':');
-    const list = occ.filter(o => o.kind === kind && o.refId === refId && !o.paid);
-    const sum = list.reduce((a, o) => a + o.price, 0);
-    confirmBox('Отметить оплаченными ' + list.length + ' ' + plural(list.length, 'занятие', 'занятия', 'занятий') + ' на сумму ' + money(sum) + '?', () => {
-      list.forEach(o => setMark(o.id, { paid: true })); render(); toast('Долг закрыт: ' + money(sum));
+    const sid = b.dataset.payall;
+    const list = occ.filter(o => o.members.indexOf(sid) >= 0 && !o.payMap[sid]);
+    const sum = list.reduce((a, o) => a + o.perOne, 0);
+    const who = (student(sid) || {}).name || 'ученика';
+    confirmBox('Отметить оплаченными ' + list.length + ' ' + plural(list.length, 'занятие', 'занятия', 'занятий')
+      + ' у ' + who + ' на сумму ' + money(sum) + '?', () => {
+      list.forEach(o => setPaid(o, sid, true)); render(); toast('Долг закрыт: ' + money(sum));
     }, 'Да, оплачено');
   });
   $('#expDebt').onclick = () => exportOcc(unpaid, 'dolgi_' + todayKey() + '.csv');
