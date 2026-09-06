@@ -637,7 +637,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
    ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
    ========================================================= */
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '3.3 · 3 сентября 2026, 12:40';
+const APP_VERSION = '3.4 · 6 сентября 2026, 14:00';
 const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
 const moneyShort = n => {
   n = Math.round(n || 0);
@@ -738,6 +738,34 @@ const avatarColor = name => {
 const firstName = name => String(name || '').trim().split(/\s+/)[0] || '—';
 const initials = name => String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
+/* ---------- периодичность постоянных занятий ---------- */
+const REPS = {
+  w1: 'каждую неделю',
+  w2: 'раз в 2 недели',
+  w3: 'раз в 3 недели',
+  w4: 'раз в 4 недели',
+  m:  'раз в месяц'
+};
+const repOf = sl => (sl && REPS[sl.rep]) ? sl.rep : 'w1';
+const repLabel = sl => REPS[repOf(sl)];
+const repShort = sl => ({ w1: '', w2: ' · через неделю', w3: ' · раз в 3 нед.', w4: ' · раз в 4 нед.', m: ' · раз в месяц' })[repOf(sl)];
+
+/** Попадает ли дата под правило постоянного занятия */
+function slotHits(sl, d, k) {
+  if (sl.archived) return false;
+  if (sl.wd !== wdIdx(d)) return false;
+  if (sl.from && k < sl.from) return false;
+  if (sl.to && k > sl.to) return false;
+  const rep = repOf(sl);
+  if (rep === 'w1') return true;
+  const start = parseKey(sl.from || k);
+  // раз в месяц — тот же по счёту день недели (например, третье воскресенье)
+  if (rep === 'm') return Math.ceil(d.getDate() / 7) === Math.ceil(start.getDate() / 7);
+  const n = +rep.slice(1) || 1;
+  const weeks = Math.round((startOfWeek(d) - startOfWeek(start)) / 604800000);
+  return ((weeks % n) + n) % n === 0;
+}
+
 /* ---------- занятия (генерация из шаблона + разовые) ---------- */
 function occId(slotId, dateKey) { return slotId + '@' + dateKey; }
 
@@ -802,13 +830,10 @@ function occurrences(fromKey, toKey) {
   const frozen = {};
   DB.extra.forEach(e => { frozen[e.id] = 1; });
   for (let d = new Date(from); d <= to; d = addDays(d, 1)) {
-    const k = key(d), wd = wdIdx(d);
+    const k = key(d);
     DB.slots.forEach(sl => {
       if (frozen[occId(sl.id, k)]) return;
-      if (sl.wd !== wd) return;
-      if (sl.archived) return;
-      if (sl.from && k < sl.from) return;
-      if (sl.to && k > sl.to) return;
+      if (!slotHits(sl, d, k)) return;
       out.push(buildOcc({
         id: occId(sl.id, k), slotId: sl.id, date: k, time: sl.time, dur: sl.dur || 60,
         kind: sl.kind, refId: sl.refId, subject: sl.subject, price: sl.price
@@ -859,9 +884,9 @@ function freezeSlotHistory(sl, upTo) {
   let d = parseKey(sl.from || key(addDays(new Date(), -730)));
   let n = 0;
   for (; d <= end; d = addDays(d, 1)) {
-    if (wdIdx(d) !== sl.wd) continue;
     const k = key(d);
     if (sl.to && k > sl.to) break;
+    if (!slotHits(sl, d, k)) continue;
     const id = occId(sl.id, k);
     const m = DB.marks[id];
     if (!m || have[id]) continue;
@@ -1772,7 +1797,7 @@ function lessonModal(o) {
       </div>` : ''}
       ${o.slotId && slotOf(o.slotId) ? `<div class="card" style="background:var(--surface-2);margin-top:16px;box-shadow:none">
         <div class="card-title">Постоянное занятие</div>
-        <div class="muted small" style="margin:3px 0 10px">Повторяется каждую неделю: ${DAYS_FULL[wdIdx(d)].toLowerCase()}, ${esc(slotOf(o.slotId).time)}</div>
+        <div class="muted small" style="margin:3px 0 10px">Повторяется ${repLabel(slotOf(o.slotId))}: ${DAYS_FULL[wdIdx(d)].toLowerCase()}, ${esc(slotOf(o.slotId).time)}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-sm" id="lEditSlot">Изменить расписание</button>
           <button class="btn btn-sm btn-danger" id="lDelSlot">Убрать из расписания</button>
@@ -1850,6 +1875,11 @@ function slotModal(s, wd, fromDate) {
         <div class="field"><label>Стоимость, ₽</label><input type="number" id="sPrice" step="50" value="${s ? (s.price || defaultPriceFor(s.kind, s.refId, s.dur)) : DB.settings.defaultPrice}"></div>
       </div>
       <div class="row">
+        <div class="field"><label>Как часто</label>
+          <select id="sRep">${Object.keys(REPS).map(r => `<option value="${r}" ${repOf(s || {}) === r ? 'selected' : ''}>${REPS[r]}</option>`).join('')}</select>
+          <span class="hint" id="sRepHint"></span></div>
+      </div>
+      <div class="row">
         <div class="field"><label>Занимаемся с</label><input type="date" id="sFrom" value="${s && s.from ? s.from : (fromDate || todayKey())}"><span class="hint">С этой даты занятие появится в расписании</span></div>
         <div class="field"><label>По (необязательно)</label><input type="date" id="sTo" value="${s && s.to ? s.to : ''}"><span class="hint">Например, до конца учебного года</span></div>
       </div>
@@ -1862,12 +1892,30 @@ function slotModal(s, wd, fromDate) {
   $('#sDur').oninput = sync;
   function sync() { const p = defaultPriceFor(k.value, $('#sRef').value, +$('#sDur').value || 60); if (p) $('#sPrice').value = p; }
 
+  // показываем ближайшие даты, чтобы сразу было видно, как ляжет периодичность
+  function repHint() {
+    const draft = { wd: +$('#sWd').value, rep: $('#sRep').value, from: $('#sFrom').value || todayKey(), to: $('#sTo').value || null };
+    if (draft.rep === 'w1') { $('#sRepHint').textContent = 'Каждую неделю без пропусков'; return; }
+    const out = [];
+    let d = parseKey(draft.from);
+    for (let i = 0; i < 400 && out.length < 4; i++, d = addDays(d, 1)) {
+      const kk = key(d);
+      if (slotHits(draft, d, kk)) out.push(fmtDate(d));
+    }
+    $('#sRepHint').textContent = out.length ? 'Ближайшие: ' + out.join(', ') : 'Подходящих дат не нашлось';
+  }
+  $('#sRep').onchange = repHint;
+  $('#sWd').onchange = repHint;
+  $('#sFrom').onchange = repHint;
+  repHint();
+
   $('#sSave').onclick = () => {
     const ref = $('#sRef').value;
     if (!ref) { toast('Сначала добавьте ученика или группу'); return; }
     const data = {
       kind: k.value, refId: ref, wd: +$('#sWd').value, time: $('#sTime').value,
       dur: +$('#sDur').value || 60, subject: $('#sSubj').value, price: +$('#sPrice').value || 0,
+      rep: $('#sRep').value || 'w1',
       from: $('#sFrom').value || null, to: $('#sTo').value || null, archived: false
     };
     let saved = 0;
@@ -1899,7 +1947,7 @@ function slotsOf(kind, refId) {
   return DB.slots.filter(s => !s.archived && s.kind === kind && s.refId === refId)
     .sort((a, b) => a.wd - b.wd || minutesOf(a.time) - minutesOf(b.time));
 }
-function slotLine(s) { return DAYS_SHORT[s.wd] + ' ' + s.time; }
+function slotLine(s) { return DAYS_SHORT[s.wd] + ' ' + s.time + repShort(s); }
 
 /* =========================================================
    УЧЕНИКИ И ГРУППЫ — одна вкладка
