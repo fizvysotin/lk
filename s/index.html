@@ -162,6 +162,7 @@ a{color:var(--brand)}
 .cols-2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .cols-3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .cols-4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.cols-5{grid-template-columns:repeat(auto-fit,minmax(172px,1fr))}
 /* карточки учеников и групп: одиночная карточка не растягивается на всю ширину */
 .cards{display:grid;gap:14px;align-items:start;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
 .section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 9px 2px}
@@ -371,6 +372,8 @@ textarea{resize:vertical;min-height:64px}
   cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);display:inline-flex;gap:4px;align-items:center;
 }
 .pay-btn.on{background:var(--st-good);border-color:var(--st-good);color:#fff}
+.paylist{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.pay-btn.pay-one{font-size:11.5px;padding:3px 8px;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lsn-more{margin-left:auto;color:var(--muted);border:0;background:none;cursor:pointer;padding:2px 5px;border-radius:6px;font-size:14px}
 .lsn-more:hover{background:var(--surface-3);color:var(--ink)}
 
@@ -399,9 +402,13 @@ table.tbl tbody tr:hover{background:var(--surface-2)}
 }
 .st-name{font-weight:700;font-size:15px}
 .st-meta{font-size:12px;color:var(--muted)}
-.st-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:9px}
+.st-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:9px}
 .st-stats b{display:block;font-size:15px;color:var(--ink);font-weight:700}
 .st-actions{display:flex;gap:6px;flex-wrap:wrap}
+.abon{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.abon b{font-size:15px;color:var(--ink)}
+.abon.on{border-color:var(--st-good);background:color-mix(in srgb,var(--st-good) 8%,transparent)}
 
 /* ============ MODAL ============ */
 .overlay{
@@ -531,7 +538,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .banner{display:none}
   .nav-inner{flex-wrap:wrap}
   .header-tools{width:100%;padding:0 0 8px;margin:0;border-left:0;justify-content:flex-end}
   .days{grid-template-columns:1fr}
-  .cols-4{grid-template-columns:1fr 1fr;gap:9px}
+  .cols-4,.cols-5{grid-template-columns:1fr 1fr;gap:9px}
   .cols-3,.cols-2{grid-template-columns:1fr}
   .stat{padding:11px 12px}
   .stat .value{font-size:21px}
@@ -908,6 +915,9 @@ function viewWeek() {
             </div>
             <div class="lsn-bot">
               <span class="badge ${STATUS[l.st] ? STATUS[l.st].cls : 'badge'}">${STATUS[l.st] ? STATUS[l.st].icon + ' ' + STATUS[l.st].label : ''}</span>
+              ${l.st === 'move' || l.st === 'cancel' ? '' : (l.pd
+      ? '<span class="badge badge-good">✓ оплачено</span>'
+      : '<span class="badge">не оплачено</span>')}
               <span class="muted small">${l.dur} мин</span>
             </div>
           </div>`).join('') : '<div class="day-empty">Занятий нет</div>'}
@@ -917,6 +927,8 @@ function viewWeek() {
 
   const month = lessons().filter(l => l.d.slice(0, 7) === tk.slice(0, 7));
   const cnt = st => month.filter(l => l.st === st).length;
+  const payable = month.filter(l => l.st !== 'move' && l.st !== 'cancel');
+  const payN = { all: payable.length, paid: payable.filter(l => l.pd).length };
 
   $('#app').innerHTML = `
   <div class="page-head">
@@ -931,10 +943,11 @@ function viewWeek() {
       <span>· ${week.length} ${plural(week.length, 'занятие', 'занятия', 'занятий')}</span></div>
   </div>
 
-  <div class="grid cols-4" style="margin-bottom:14px">
+  <div class="grid cols-5" style="margin-bottom:14px">
     <div class="stat"><div class="label">В этом месяце</div><div class="value">${cnt('done')}</div><div class="delta">занятий проведено</div></div>
     <div class="stat"><div class="label">Пропуски</div><div class="value">${cnt('miss')}</div><div class="delta">без предупреждения</div></div>
     <div class="stat"><div class="label">Переносы</div><div class="value">${cnt('move')}</div><div class="delta">за месяц</div></div>
+    <div class="stat"><div class="label">Оплачено</div><div class="value">${payN.paid}<small> из ${payN.all}</small></div><div class="delta">${payN.all - payN.paid ? (payN.all - payN.paid) + ' ' + plural(payN.all - payN.paid, 'занятие ждёт', 'занятия ждут', 'занятий ждут') + ' оплаты' : 'всё оплачено'}</div></div>
     <div class="stat"><div class="label">Впереди</div><div class="value">${lessons().filter(l => l.d > tk && l.st === 'plan').length}</div><div class="delta">запланировано</div></div>
   </div>
 
