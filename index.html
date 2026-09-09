@@ -162,6 +162,7 @@ a{color:var(--brand)}
 .cols-2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .cols-3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .cols-4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.cols-5{grid-template-columns:repeat(auto-fit,minmax(172px,1fr))}
 /* карточки учеников и групп: одиночная карточка не растягивается на всю ширину */
 .cards{display:grid;gap:14px;align-items:start;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
 .section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 9px 2px}
@@ -401,9 +402,13 @@ table.tbl tbody tr:hover{background:var(--surface-2)}
 }
 .st-name{font-weight:700;font-size:15px}
 .st-meta{font-size:12px;color:var(--muted)}
-.st-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:9px}
+.st-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:9px}
 .st-stats b{display:block;font-size:15px;color:var(--ink);font-weight:700}
 .st-actions{display:flex;gap:6px;flex-wrap:wrap}
+.abon{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.abon b{font-size:15px;color:var(--ink)}
+.abon.on{border-color:var(--st-good);background:color-mix(in srgb,var(--st-good) 8%,transparent)}
 
 /* ============ MODAL ============ */
 .overlay{
@@ -533,7 +538,7 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .banner{display:none}
   .nav-inner{flex-wrap:wrap}
   .header-tools{width:100%;padding:0 0 8px;margin:0;border-left:0;justify-content:flex-end}
   .days{grid-template-columns:1fr}
-  .cols-4{grid-template-columns:1fr 1fr;gap:9px}
+  .cols-4,.cols-5{grid-template-columns:1fr 1fr;gap:9px}
   .cols-3,.cols-2{grid-template-columns:1fr}
   .stat{padding:11px 12px}
   .stat .value{font-size:21px}
@@ -637,7 +642,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
    ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
    ========================================================= */
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '3.4 · 6 сентября 2026, 14:00';
+const APP_VERSION = '3.5 · 9 сентября 2026, 12:00';
 const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
 const moneyShort = n => {
   n = Math.round(n || 0);
@@ -780,12 +785,21 @@ function membersOf(kind, refId) {
   return student(refId) ? [refId] : [refId];
 }
 
+/** Доля ученика со скидкой, округлённая до 10 ₽ */
+const discShare = (base1, off) => off ? Math.round(base1 * (100 - off) / 100 / 10) * 10 : base1;
+
 function buildOcc(base) {
   const m = markOf(base.id) || {};
   const price = m.price != null ? m.price : (base.price != null ? base.price : defaultPriceFor(base.kind, base.refId, base.dur));
-  const members = membersOf(base.kind, base.refId);
+  const members = base.members && base.members.length
+    ? base.members.filter(id => student(id)) : membersOf(base.kind, base.refId);
   const n = Math.max(1, members.length);
-  const perOne = Math.round(price / n);
+  const base1 = Math.round(price / n);
+  // персональная скидка (абонемент) хранится в отметке занятия по каждому ученику
+  const disc = m.disc || {};
+  const shares = {};
+  members.forEach(id => { shares[id] = discShare(base1, +disc[id] || 0); });
+  const sum = members.reduce((a, id) => a + shares[id], 0);
   // в группе оплату отмечаем по каждому ученику отдельно, у индивидуального — одна галочка
   const payMap = {};
   if (base.kind === 'group') members.forEach(id => { if (m.pay && m.pay[id]) payMap[id] = 1; });
@@ -793,18 +807,24 @@ function buildOcc(base) {
   const paidIds = members.filter(id => payMap[id]);
   const allPaid = base.kind === 'group' ? (members.length > 0 && paidIds.length === members.length) : !!m.paid;
   return Object.assign({}, base, {
-    price: price,
+    price: members.length ? sum : price,
+    listPrice: price,
     st: m.st || 'plan',
     paid: allPaid,
     members: members,
     payMap: payMap,
     paidIds: paidIds,
-    perOne: perOne,
-    recv: allPaid ? price : perOne * paidIds.length,
+    disc: disc,
+    shares: shares,
+    perOne: base1,
+    recv: paidIds.reduce((a, id) => a + shares[id], 0),
     note: m.note || '',
     time: m.time || base.time
   });
 }
+
+/** Сколько платит конкретный ученик за это занятие */
+const shareOf = (o, id) => (o.shares && o.shares[id] != null) ? o.shares[id] : o.perOne;
 
 /** Отметить оплату одного ученика (в группе — только его доли) */
 function setPaid(o, studentId, val) {
@@ -844,7 +864,8 @@ function occurrences(fromKey, toKey) {
     if (e.date < fromKey || e.date > toKey) return;
     out.push(buildOcc({
       id: e.id, slotId: null, date: e.date, time: e.time, dur: e.dur || 60,
-      kind: e.kind, refId: e.refId, subject: e.subject, price: e.price
+      kind: e.kind, refId: e.refId, subject: e.subject, price: e.price,
+      members: e.members || null   // состав на момент заморозки, если он был сохранён
     }));
   });
   out.sort((a, b) => a.date === b.date ? minutesOf(a.time) - minutesOf(b.time) : (a.date < b.date ? -1 : 1));
@@ -862,12 +883,14 @@ const charged = o => isCharged(o) ? o.price : 0;
 const received = o => isCharged(o) ? o.recv : 0;
 
 function totals(list) {
-  const t = { charged: 0, received: 0, debt: 0, done: 0, miss: 0, move: 0, cancel: 0, plan: 0, lessons: 0, minutes: 0 };
+  const t = { charged: 0, received: 0, prepaid: 0, prepaidN: 0, debt: 0, done: 0, miss: 0, move: 0, cancel: 0, plan: 0, lessons: 0, minutes: 0 };
   list.forEach(o => {
     t[o.st] = (t[o.st] || 0) + 1;
     if (isCharged(o)) { t.lessons++; t.charged += o.price; t.minutes += (o.dur || 60); t.received += o.recv; }
+    else if (o.st === 'plan' && o.paidIds.length) { t.prepaid += o.recv; t.prepaidN++; }
   });
   t.debt = t.charged - t.received;
+  t.income = t.received + t.prepaid;
   t.tax = Math.round(t.charged * (DB.settings.taxRate || 0) / 100);
   t.net = t.charged - t.tax;
   t.avg = t.lessons ? Math.round(t.charged / t.lessons) : 0;
@@ -894,6 +917,7 @@ function freezeSlotHistory(sl, upTo) {
       id: id, date: k, time: m.time || sl.time, dur: sl.dur || 60,
       kind: sl.kind, refId: sl.refId, subject: sl.subject,
       price: m.price != null ? m.price : (sl.price != null ? sl.price : defaultPriceFor(sl.kind, sl.refId, sl.dur)),
+      members: membersOf(sl.kind, sl.refId),
       fromSlot: sl.id
     });
     have[id] = 1; n++;
@@ -901,22 +925,97 @@ function freezeSlotHistory(sl, upTo) {
   return n;
 }
 
+/** Заморозить историю всех постоянных занятий цели (перед сменой состава/цены) */
+function freezeAllOf(kind, refId) {
+  let n = 0;
+  (DB.slots || []).filter(s => s.kind === kind && s.refId === refId)
+    .forEach(sl => { n += freezeSlotHistory(sl); });
+  return n;
+}
+
+/** Пересчитать стоимость постоянных занятий цели по текущей ставке.
+ *  Вызывать ПОСЛЕ freezeAllOf и после изменения состава/цены. */
+function resyncSlotPrices(kind, refId) {
+  let n = 0;
+  (DB.slots || []).filter(s => s.kind === kind && s.refId === refId && !s.archived).forEach(sl => {
+    const np = defaultPriceFor(kind, refId, sl.dur);
+    if (sl.price !== np) { sl.price = np; n++; }
+  });
+  return n;
+}
+
 /** Итоги по одному ученику: в группе учитывается только его доля */
 function totalsOf(list, studentId) {
-  const t = { charged: 0, received: 0, debt: 0, done: 0, miss: 0, move: 0, cancel: 0, plan: 0, lessons: 0, minutes: 0 };
+  const t = { charged: 0, received: 0, prepaid: 0, prepaidN: 0, debt: 0, done: 0, miss: 0, move: 0, cancel: 0, plan: 0, lessons: 0, minutes: 0 };
   list.forEach(o => {
     if (!o.members || o.members.indexOf(studentId) < 0) return;
     t[o.st] = (t[o.st] || 0) + 1;
     if (isCharged(o)) {
-      t.lessons++; t.charged += o.perOne; t.minutes += (o.dur || 60);
-      if (o.payMap[studentId]) t.received += o.perOne;
-    }
+      t.lessons++; t.charged += shareOf(o, studentId); t.minutes += (o.dur || 60);
+      if (o.payMap[studentId]) t.received += shareOf(o, studentId);
+    } else if (o.st === 'plan' && o.payMap[studentId]) { t.prepaid += shareOf(o, studentId); t.prepaidN++; }
   });
   t.debt = t.charged - t.received;
+  t.income = t.received + t.prepaid;
   t.tax = Math.round(t.charged * (DB.settings.taxRate || 0) / 100);
   t.net = t.charged - t.tax;
   t.avg = t.lessons ? Math.round(t.charged / t.lessons) : 0;
   return t;
+}
+
+/** Потенциал: во сколько выльется список, если все запланированные занятия состоятся */
+function potential(list) {
+  let sum = 0, n = 0, min = 0;
+  list.forEach(o => {
+    if (o.st === 'move' || o.st === 'cancel') return;
+    sum += o.price; n++; min += (o.dur || 60);
+  });
+  return { charged: sum, lessons: n, minutes: min,
+    net: sum - Math.round(sum * (DB.settings.taxRate || 0) / 100) };
+}
+
+/* ---------- абонемент на месяц ---------- */
+const ABON = [{ from: 9, off: 10 }, { from: 4, off: 5 }];
+const discountFor = n => (ABON.find(x => n >= x.from) || { off: 0 }).off;
+
+/** Занятия ученика за месяц, которые входят в абонемент */
+function abonOcc(studentId, mk) {
+  return monthOcc(mk).filter(o => o.members.indexOf(studentId) >= 0 && o.st !== 'move' && o.st !== 'cancel');
+}
+
+/** Расчёт месячного абонемента: количество, скидка, суммы */
+function abonement(studentId, mk) {
+  mk = mk || dashMonth;
+  const list = abonOcc(studentId, mk);
+  const n = list.length;
+  const off = discountFor(n);
+  const full = list.reduce((a, o) => a + o.perOne, 0);
+  // считаем так же, как при оплате: скидка применяется к каждому занятию отдельно
+  const price = list.reduce((a, o) => a + discShare(o.perOne, off), 0);
+  const paid = list.filter(o => o.payMap[studentId]).length;
+  const minutes = list.reduce((a, o) => a + (o.dur || 60), 0);
+  // фактически начислено ученику за месяц (с уже применёнными скидками)
+  const accrued = list.reduce((a, o) => a + shareOf(o, studentId), 0);
+  return { mk: mk, list: list, n: n, off: off, full: full, price: price,
+    save: full - price, paid: paid, minutes: minutes, accrued: accrued };
+}
+
+/** Отметить месяц оплаченным по абонементу: ставим скидку и оплату */
+function payAbonement(studentId, mk) {
+  const a = abonement(studentId, mk);
+  a.list.forEach(o => {
+    const cur = DB.marks[o.id] || {};
+    const disc = Object.assign({}, cur.disc || {});
+    if (a.off) disc[studentId] = a.off; else delete disc[studentId];
+    const patch = { disc: Object.keys(disc).length ? disc : null };
+    if (o.kind === 'group') {
+      const pay = Object.assign({}, cur.pay || {});
+      pay[studentId] = 1;
+      patch.pay = pay;
+    } else patch.paid = true;
+    setMark(o.id, patch);
+  });
+  return a;
 }
 
 function setMark(id, patch) {
@@ -925,6 +1024,7 @@ function setMark(id, patch) {
   if (!next.st || next.st === 'plan') delete next.st;
   if (!next.paid) delete next.paid;
   if (!next.pay || !Object.keys(next.pay).length) delete next.pay;
+  if (!next.disc || !Object.keys(next.disc).length) delete next.disc;
   if (!next.note) delete next.note;
   if (Object.keys(next).length === 0) delete DB.marks[id]; else DB.marks[id] = next;
   save();
@@ -1423,6 +1523,7 @@ function viewDash() {
   const today = occurrences(dToday, dToday);
   const delta = tPrev.charged ? Math.round((t.charged - tPrev.charged) / tPrev.charged * 100) : null;
 
+  const pot = potential(occ);
   const attended = t.done, total = t.done + t.miss + t.move + t.cancel;
   const attRate = total ? Math.round(t.done / total * 100) : 0;
 
@@ -1464,7 +1565,7 @@ function viewDash() {
     </div>
   </div>` : ''}
 
-  <div class="grid cols-4" style="margin-bottom:14px">
+  <div class="grid cols-5" style="margin-bottom:14px">
     <div class="stat hero">
       <div class="label">Чистыми за ${MONTHS_N[m - 1].toLowerCase()}</div>
       <div class="value">${money(t.net)}</div>
@@ -1477,8 +1578,13 @@ function viewDash() {
     </div>
     <div class="stat">
       <div class="label">Получено на руки</div>
-      <div class="value">${moneyShort(t.received)}<small> ₽</small></div>
-      <div class="delta ${t.debt > 0 ? 'down' : 'up'}">${t.debt > 0 ? 'Ждём оплату: ' + money(t.debt) : 'Все занятия оплачены'}</div>
+      <div class="value">${moneyShort(t.income)}<small> ₽</small></div>
+      <div class="delta ${t.debt > 0 ? 'down' : 'up'}">${t.prepaid ? 'в т.ч. вперёд ' + money(t.prepaid) + ' · ' : ''}${t.debt > 0 ? 'ждём оплату: ' + money(t.debt) : 'все занятия оплачены'}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Потенциал месяца</div>
+      <div class="value">${moneyShort(pot.charged)}<small> ₽</small></div>
+      <div class="delta">${pot.lessons} ${plural(pot.lessons, 'занятие', 'занятия', 'занятий')} · осталось провести ${money(Math.max(0, pot.charged - t.charged))}</div>
     </div>
     <div class="stat">
       <div class="label">Проведено занятий</div>
@@ -1953,7 +2059,9 @@ function slotLine(s) { return DAYS_SHORT[s.wd] + ' ' + s.time + repShort(s); }
    УЧЕНИКИ И ГРУППЫ — одна вкладка
    ========================================================= */
 function groupCardHtml(g) {
-  const t = totals(monthOcc(dashMonth).filter(o => o.kind === 'group' && o.refId === g.id));
+  const occ = monthOcc(dashMonth).filter(o => o.kind === 'group' && o.refId === g.id);
+  const t = totals(occ);
+  const pot = potential(occ);
   const sl = slotsOf('group', g.id);
   return `<div class="st-card">
     <div class="st-top">
@@ -1968,8 +2076,9 @@ function groupCardHtml(g) {
     <div class="checks">${g.studentIds.map(id => { const s = student(id); return s ? '<span class="badge">' + esc(s.name) + (s.grade ? ' · ' + s.grade + ' кл.' : '') + '</span>' : ''; }).join('') || '<span class="badge">состав не задан</span>'}</div>
     <div class="checks">${sl.map(x => '<span class="badge">🗓 ' + slotLine(x) + '</span>').join('') || '<span class="badge">без расписания</span>'}</div>
     <div class="st-stats">
-      <div><span class="muted">Занятий за месяц</span><b>${t.lessons}</b></div>
-      <div><span class="muted">Доход</span><b>${money(t.charged)}</b></div>
+      <div><span class="muted">Занятий за месяц</span><b>${pot.lessons}</b></div>
+      <div><span class="muted">Часов в месяц</span><b>${hoursText(pot.minutes)}</b></div>
+      <div><span class="muted">Доход в месяц</span><b>${money(pot.charged)}</b></div>
       <div><span class="muted">Долг</span><b style="${t.debt ? 'color:var(--st-crit)' : ''}">${money(t.debt)}</b></div>
     </div>
     <div class="st-actions">
@@ -1979,8 +2088,28 @@ function groupCardHtml(g) {
   </div>`;
 }
 
+/** «5 ч», «5,5 ч» */
+function hoursText(min) {
+  const h = (min || 0) / 60;
+  return (Math.round(h * 10) / 10).toString().replace('.', ',') + ' ч';
+}
+/** Строка абонемента на месяц под карточкой ученика */
+function abonLine(ab) {
+  if (!ab.n) return '';
+  const paidAll = ab.paid >= ab.n;
+  return `<div class="abon ${paidAll ? 'on' : ''}">
+    <span>Абонемент · ${MONTHS_N[+ab.mk.split('-')[1] - 1].toLowerCase()}</span>
+    <b>${money(ab.price)}</b>
+    ${ab.off ? `<span class="badge badge-good">−${ab.off}%</span><span class="muted small">выгода ${money(ab.save)}</span>`
+      : '<span class="muted small">скидка от 4 занятий</span>'}
+    ${paidAll ? '<span class="badge badge-good">оплачен</span>'
+      : `<span class="muted small">${ab.n} ${plural(ab.n, 'занятие', 'занятия', 'занятий')} · ${hoursText(ab.minutes)}</span>`}
+  </div>`;
+}
+
 function studentCardHtml(s) {
   const t = studentStats(s.id);
+  const ab = abonement(s.id, dashMonth);
   const sl = slotsOf('student', s.id);
   const grp = DB.groups.filter(g => !g.archived && g.studentIds.indexOf(s.id) >= 0);
   return `
@@ -2002,10 +2131,12 @@ function studentCardHtml(s) {
       return `<div class="small" style="margin-top:2px">Программа: <b>${esc(p.name)}</b> — пройдено ${dn} из ${tot}
         <div class="bar-mini"><i style="width:${tot ? Math.round(dn / tot * 100) : 0}%"></i></div></div>`; })()}
     <div class="st-stats">
-      <div><span class="muted">Занятий за месяц</span><b>${t.lessons}</b></div>
-      <div><span class="muted">Начислено</span><b>${money(t.charged)}</b></div>
+      <div><span class="muted">Занятий за месяц</span><b>${ab.n}</b></div>
+      <div><span class="muted">Часов в месяц</span><b>${hoursText(ab.minutes)}</b></div>
+      <div><span class="muted">Доход в месяц</span><b>${money(ab.accrued)}</b></div>
       <div><span class="muted">Долг</span><b style="${t.debt ? 'color:var(--st-crit)' : ''}">${money(t.debt)}</b></div>
     </div>
+    ${abonLine(ab)}
     <div class="st-actions">
       <button class="btn btn-sm" data-open="${s.id}">Карточка</button>
       <button class="btn btn-sm btn-ghost" data-edit="${s.id}">Изменить</button>
@@ -2110,9 +2241,12 @@ function studentModal(s) {
       price: +$('#nPrice').value || 0, goal: $('#nGoal').value,
       note: $('#nNote').value.trim()
     };
-    if (isNew) DB.students.push(Object.assign({ id: 'u' + uid(), archived: false, created: todayKey() }, data));
-    else Object.assign(s, data);
-    save(); closeModal(); render(); toast(isNew ? 'Ученик добавлен' : 'Сохранено');
+    if (isNew) { DB.students.push(Object.assign({ id: 'u' + uid(), archived: false, created: todayKey() }, data)); save(); closeModal(); render(); toast('Ученик добавлен'); return; }
+    const priceChanged = data.price !== s.price;
+    if (priceChanged) freezeAllOf('student', s.id);
+    Object.assign(s, data);
+    if (priceChanged) resyncSlotPrices('student', s.id);
+    save(); closeModal(); render(); toast(priceChanged ? 'Сохранено · стоимость занятий пересчитана' : 'Сохранено');
   };
   if (!isNew) $('#nDel').onclick = () => confirmBox('Удалить ученика «' + s.name + '» вместе с его постоянными занятиями? Отменить это будет нельзя — обычно лучше отправить в архив.', () => {
     DB.slots = DB.slots.filter(x => !(x.kind === 'student' && x.refId === s.id));
@@ -2128,6 +2262,7 @@ function studentCard(s) {
     || (o.kind === 'group' && (group(o.refId) || { studentIds: [] }).studentIds.indexOf(s.id) >= 0)).reverse();
   const t = totalsOf(hist, s.id);
   const tm = studentStats(s.id);
+  const ab = abonement(s.id, dashMonth);
   openModal(`
     <div class="modal-head">
       <div style="display:flex;gap:10px;align-items:center">
@@ -2136,11 +2271,20 @@ function studentCard(s) {
       </div>
       <button class="close-x" data-close>×</button></div>
     <div class="modal-body">
-      <div class="grid cols-3" style="margin-bottom:14px">
-        <div class="stat"><div class="label">За месяц</div><div class="value">${tm.lessons}</div><div class="delta">${money(tm.charged)}</div></div>
+      <div class="grid cols-4" style="margin-bottom:14px">
+        <div class="stat"><div class="label">За месяц</div><div class="value">${ab.n}</div><div class="delta">${hoursText(ab.minutes)} · ${money(ab.accrued)}${tm.lessons < ab.n ? ' · проведено ' + tm.lessons : ''}</div></div>
         <div class="stat"><div class="label">Долг</div><div class="value" style="${t.debt ? 'color:var(--st-crit)' : ''}">${moneyShort(t.debt)}<small> ₽</small></div><div class="delta">за 4 месяца</div></div>
         <div class="stat"><div class="label">Всего занятий</div><div class="value">${t.lessons}</div><div class="delta">${money(t.charged)} за 4 мес.</div></div>
+        <div class="stat"><div class="label">Абонемент${ab.off ? ' −' + ab.off + '%' : ''}</div><div class="value">${moneyShort(ab.price)}<small> ₽</small></div><div class="delta">${ab.n ? ab.n + ' ' + plural(ab.n, 'занятие', 'занятия', 'занятий') + (ab.save ? ' · выгода ' + money(ab.save) : '') : 'нет занятий'}</div></div>
       </div>
+      ${ab.n ? `<div class="abon ${ab.paid >= ab.n ? 'on' : ''}" style="margin-bottom:14px">
+        <span>Абонемент на ${monthLabel(ab.mk).toLowerCase()}: ${ab.n} ${plural(ab.n, 'занятие', 'занятия', 'занятий')} · ${hoursText(ab.minutes)}</span>
+        <b>${money(ab.price)}</b>
+        ${ab.off ? `<span class="badge badge-good">−${ab.off}%</span>` : '<span class="muted small">скидка от 4 занятий в месяц</span>'}
+        <span style="flex:1"></span>
+        ${ab.paid >= ab.n ? '<span class="badge badge-good">оплачен полностью</span>'
+        : `<span class="muted small">оплачено ${ab.paid} из ${ab.n}</span><button class="btn btn-sm btn-primary" id="cAbon">Оплатить абонемент</button>`}
+      </div>` : ''}
       ${slotsOf('student', s.id).length ? '<div class="card-title" style="margin-bottom:6px">Постоянное расписание</div><div class="checks" style="margin-bottom:14px">'
       + slotsOf('student', s.id).map(x => '<span class="badge">🗓 ' + slotLine(x) + ' · ' + x.subject + ' · ' + money(x.price || 0) + '</span>').join('') + '</div>' : ''}
       ${s.note ? '<div class="card" style="margin-bottom:14px;background:var(--surface-2)"><div class="card-title">Заметки</div><div class="small" style="margin-top:4px;white-space:pre-wrap">' + esc(s.note) + '</div></div>' : ''}
@@ -2152,7 +2296,7 @@ function studentCard(s) {
           <td class="nowrap muted">${esc(o.time)}</td>
           <td>${subjBadge(o.subject)}</td>
           <td><span class="badge ${STATUS[o.st].cls}">${STATUS[o.st].icon} ${STATUS[o.st].label}</span></td>
-          <td class="num nowrap">${isCharged(o) ? money(o.perOne) : '—'}</td>
+          <td class="num nowrap">${isCharged(o) ? money(shareOf(o, s.id)) : '—'}</td>
           <td class="nowrap">${isCharged(o) ? (o.payMap[s.id] ? '<span class="badge badge-good">оплачено</span>' : '<span class="badge badge-crit">долг</span>') : ''}</td>
         </tr>`).join('') : '<tr><td class="muted">Занятий пока нет</td></tr>'}
         </tbody></table>
@@ -2167,6 +2311,10 @@ function studentCard(s) {
   wireTopics(refreshTopics);
   $('#cAccess').onclick = () => { closeModal(); accessModal(s); };
   $('#cEdit').onclick = () => { closeModal(); studentModal(s); };
+  if ($('#cAbon')) $('#cAbon').onclick = () => confirmBox(
+    'Отметить все ' + ab.n + ' ' + plural(ab.n, 'занятие', 'занятия', 'занятий') + ' за ' + monthLabel(ab.mk).toLowerCase()
+    + ' как оплаченные по абонементу за ' + money(ab.price) + (ab.off ? ' (скидка ' + ab.off + '%)' : '') + '?',
+    () => { payAbonement(s.id, ab.mk); save(); closeModal(); render(); studentCard(s); toast('Абонемент оплачен'); });
 }
 
 function groupModal(g) {
@@ -2203,9 +2351,14 @@ function groupModal(g) {
       name: name, perStudent: +$('#gPrice').value || 0, subject: $('#gSubj').value,
       studentIds: $$('.gSt').filter(c => c.checked).map(c => c.value), note: $('#gNote').value.trim()
     };
-    if (isNew) DB.groups.push(Object.assign({ id: 'g' + uid(), archived: false }, data));
-    else Object.assign(g, data);
-    save(); closeModal(); render(); toast('Сохранено');
+    if (isNew) { DB.groups.push(Object.assign({ id: 'g' + uid(), archived: false }, data)); save(); closeModal(); render(); toast('Сохранено'); return; }
+    const changed = data.perStudent !== g.perStudent ||
+      data.studentIds.join(',') !== (g.studentIds || []).join(',');
+    freezeAllOf('group', g.id);          // прошедшие занятия сохраняют старую цену и старый состав
+    Object.assign(g, data);
+    const n = changed ? resyncSlotPrices('group', g.id) : 0;
+    save(); closeModal(); render();
+    toast(n ? 'Сохранено · стоимость занятий пересчитана' : 'Сохранено');
   };
 }
 /* =========================================================
@@ -3218,6 +3371,7 @@ function pupilLessons(s) {
     .map(o => ({
       d: o.date, t: o.time, dur: o.dur || 60,
       subj: o.subject || '', st: o.st || 'plan',
+      pd: o.payMap && o.payMap[s.id] ? 1 : 0,   // только факт оплаты, без сумм
       g: o.kind === 'group' ? (gid[o.refId] || '') : ''
     }));
 }
@@ -3418,8 +3572,8 @@ function viewMoney() {
         id: id, name: (student(id) || {}).name || 'Ученик', charged: 0, paid: 0, n: 0, nUnpaid: 0, last: '', groups: {}
       };
       const r = byStudent[id];
-      r.charged += o.perOne; r.n++;
-      if (o.payMap[id]) r.paid += o.perOne; else r.nUnpaid++;
+      r.charged += shareOf(o, id); r.n++;
+      if (o.payMap[id]) r.paid += shareOf(o, id); else r.nUnpaid++;
       if (o.kind === 'group') r.groups[targetName(o.kind, o.refId)] = 1;
       if (o.date > r.last) r.last = o.date;
     });
@@ -3437,8 +3591,8 @@ function viewMoney() {
   <div class="grid cols-4" style="margin-bottom:14px">
     <div class="stat"><div class="label">Общий долг</div><div class="value" style="${t.debt ? 'color:var(--st-crit)' : ''}">${moneyShort(t.debt)}<small> ₽</small></div>
       <div class="delta">${owed.length} ${plural(owed.length, 'оплата', 'оплаты', 'оплат')} не отмечено</div></div>
-    <div class="stat"><div class="label">Получено за ${MONTHS_N[+dashMonth.slice(5, 7) - 1].toLowerCase()}</div><div class="value">${moneyShort(tm.received)}<small> ₽</small></div>
-      <div class="delta">из ${money(tm.charged)} начисленных</div></div>
+    <div class="stat"><div class="label">Получено за ${MONTHS_N[+dashMonth.slice(5, 7) - 1].toLowerCase()}</div><div class="value">${moneyShort(tm.income)}<small> ₽</small></div>
+      <div class="delta">из ${money(tm.charged)} начисленных${tm.prepaid ? ' + ' + money(tm.prepaid) + ' вперёд' : ''}</div></div>
     <div class="stat"><div class="label">Собираемость</div><div class="value">${t.charged ? Math.round(t.received / t.charged * 100) : 100}%</div>
       <div class="delta">оплачено ${money(t.received)} за год</div></div>
     <div class="stat"><div class="label">Налог за год (${DB.settings.taxRate}%)</div><div class="value">${moneyShort(t.tax)}<small> ₽</small></div>
@@ -3477,7 +3631,7 @@ function viewMoney() {
         <td>${subjBadge(x.o.subject)}</td>
         <td><b>${esc((student(x.id) || {}).name || 'Ученик')}</b>${x.o.kind === 'group' ? ' <span class="badge badge-g">' + esc(targetName(x.o.kind, x.o.refId)) + '</span>' : ''}</td>
         <td><span class="badge ${STATUS[x.o.st].cls}">${STATUS[x.o.st].icon} ${STATUS[x.o.st].label}</span></td>
-        <td class="num nowrap">${money(x.o.perOne)}</td>
+        <td class="num nowrap">${money(shareOf(x.o, x.id))}</td>
         <td><button class="pay-btn" data-pay1="${esc(x.o.id)}" data-sid="${esc(x.id)}">₽ оплачено</button></td>
       </tr>`).join('') : '<tr><td class="muted">Долгов нет — красота 🎉</td></tr>'}
       </tbody></table>
@@ -3491,7 +3645,7 @@ function viewMoney() {
   $$('[data-payall]').forEach(b => b.onclick = () => {
     const sid = b.dataset.payall;
     const list = occ.filter(o => o.members.indexOf(sid) >= 0 && !o.payMap[sid]);
-    const sum = list.reduce((a, o) => a + o.perOne, 0);
+    const sum = list.reduce((a, o) => a + shareOf(o, sid), 0);
     const who = (student(sid) || {}).name || 'ученика';
     confirmBox('Отметить оплаченными ' + list.length + ' ' + plural(list.length, 'занятие', 'занятия', 'занятий')
       + ' у ' + who + ' на сумму ' + money(sum) + '?', () => {
