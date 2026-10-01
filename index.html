@@ -246,6 +246,86 @@ a{color:var(--brand)}
 }
 .bn-kid:hover{background:rgba(255,255,255,.3)}
 .bn-kid.on{background:#fff;color:var(--brand)}
+.grade-sel.auto2{border-color:var(--st-crit);color:var(--st-crit);font-weight:700}
+.lsn-close{
+  font:inherit;font-size:11px;font-weight:650;cursor:pointer;padding:3px 9px;line-height:1.5;
+  border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);flex-shrink:0;
+}
+.lsn-close:hover{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.lblock .card-title{font-size:13px}
+.chk.lTopic{align-items:flex-start;text-align:left;line-height:1.35}
+
+/* слабые места по заданиям */
+.weak{display:flex;flex-direction:column;gap:9px}
+.weak-row{display:flex;align-items:center;gap:11px}
+.weak-n{font-weight:750;font-size:13px;min-width:38px;font-variant-numeric:tabular-nums}
+.weak-bar{height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.weak-bar i{display:block;height:100%;border-radius:999px;background:var(--st-good)}
+.weak-bar i.warn{background:var(--st-warn)}
+.weak-bar i.crit{background:var(--st-crit)}
+.weak-pct{min-width:46px;text-align:right;font-variant-numeric:tabular-nums;color:var(--st-good)}
+.weak-pct.warn{color:var(--st-warn)}
+.weak-pct.crit{color:var(--st-crit)}
+
+/* свободные окна */
+.freegrid{display:flex;flex-direction:column;gap:5px}
+.free-row{display:flex;align-items:center;gap:10px}
+.free-day{min-width:28px;font-weight:700;font-size:12.5px;color:var(--ink-2)}
+.free-day.full{color:var(--muted)}
+.free-track{position:relative;flex:1;height:26px;border-radius:7px;background:var(--surface-2);overflow:hidden}
+.free-track i{position:absolute;top:0;bottom:0;display:block}
+.free-track i.busy{background:var(--brand);opacity:.85}
+.free-track i.free{
+  background:repeating-linear-gradient(45deg,var(--st-good-bg),var(--st-good-bg) 5px,transparent 5px,transparent 10px);
+  border:1px dashed var(--st-good);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.free-track i.free span{font-size:10px;font-weight:650;color:var(--st-good);white-space:nowrap}
+.free-sum{min-width:42px;text-align:right;font-size:12px;font-weight:650;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.free-scale .free-track{background:none;height:14px}
+.free-scale .free-track span{position:absolute;top:0;font-size:10px;color:var(--muted);transform:translateX(-50%)}
+@media (max-width:620px){
+  .free-track i.free span{display:none}
+  .free-track{height:22px}
+}
+
+/* отчёт родителю */
+.report{font-size:13.5px;line-height:1.5;color:var(--ink)}
+.rep-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;
+  padding-bottom:12px;margin-bottom:14px;border-bottom:2px solid var(--brand)}
+.rep-title{font-size:20px;font-weight:750;letter-spacing:-.01em}
+.rep-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.rep-tutor{font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.rep-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:16px}
+.rep-stat{border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 11px;background:var(--surface-2)}
+.rep-stat span{display:block;font-size:11.5px;color:var(--muted)}
+.rep-stat b{font-size:21px;font-weight:750;line-height:1.2}
+.rep-sec{margin-bottom:16px;break-inside:avoid}
+.rep-sec h4{font-size:14px;font-weight:700;margin:0 0 7px;color:var(--brand)}
+.rep-list{margin:4px 0 0;padding-left:20px}
+.rep-list li{margin-bottom:2px}
+.rep-next{color:var(--ink-2)}
+.rep-note{margin:7px 0 0}
+.rep-empty{margin:0;color:var(--muted);font-style:italic}
+.rep-dim{color:var(--muted);font-size:11px}
+.rep-bar{height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:7px 0}
+.rep-bar i{display:block;height:100%;background:var(--brand);border-radius:999px}
+.rep-tbl{width:100%;border-collapse:collapse;margin-top:5px;font-size:12.5px}
+.rep-tbl th{text-align:left;font-weight:650;color:var(--muted);font-size:11.5px;
+  padding:5px 8px 5px 0;border-bottom:1px solid var(--line)}
+.rep-tbl td{padding:6px 8px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.rep-foot{margin-top:18px;padding-top:10px;border-top:1px solid var(--line);
+  font-size:11px;color:var(--muted)}
+
+@media print{
+  body>*{display:none!important}
+  body>.overlay{display:block!important;position:static!important;background:none!important;padding:0!important}
+  .overlay .modal{max-width:none!important;max-height:none!important;width:auto!important;
+    box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important}
+  .modal-body{overflow:visible!important;max-height:none!important;padding:0!important}
+  .no-print{display:none!important}
+  .rep-stat{background:none}
+}
 @media (max-width:720px){
   .tk{min-width:58px}
   .tk-chip{width:24px;height:26px}
@@ -718,7 +798,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
    ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
    ========================================================= */
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '3.6 · 1 октября 2026, 23:00';
+const APP_VERSION = '3.7 · 2 октября 2026, 01:00';
 const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
 const moneyShort = n => {
   n = Math.round(n || 0);
@@ -743,7 +823,9 @@ function defaultDB() {
       groupPrice: 1200,     // групповое занятие, ₽ с человека за 60 мин
       wishPrice: 2500,
       theme: 'light',
-      workGoal: 25
+      workGoal: 25,
+      autoFail: true,     // 2 за домашку, не сданную в срок
+      autoFailDays: 0     // сколько дней подождать после срока
     },
     students: [],
     groups: [],
@@ -1870,7 +1952,9 @@ function lessonCard(o) {
           }).join('') || '<span class="muted small">состав группы не задан</span>'}</span>`
         : `<button class="pay-btn ${o.paid ? 'on' : ''}" data-act="pay" title="${paidTitle}">₽ ${o.paid ? 'оплачено' : 'не опл.'}</button>`)}
       ${o.note ? '<span class="badge" title="' + esc(o.note) + '">📝</span>' : ''}
-      <button class="lsn-more" data-act="more" title="Подробнее">⋮</button>
+      ${o.date <= todayKey()
+      ? `<button class="lsn-close" data-act="more" title="Закрыть занятие: темы, домашка, оплата">закрыть</button>`
+      : '<button class="lsn-more" data-act="more" title="Подробнее">⋮</button>'}
     </div>
   </div>`;
 }
@@ -1936,6 +2020,8 @@ function viewWeek() {
 
   <div class="days">${days}</div>
 
+  ${freeCard(occ)}
+
   <div class="card" style="margin-top:14px">
     <div class="card-title" style="margin-bottom:8px">Обозначения</div>
     <div class="checks">
@@ -1986,6 +2072,92 @@ function viewWeek() {
   });
 }
 
+/* ---------- свободные окна в расписании ---------- */
+
+/** Границы рабочего дня: по самым ранним и поздним занятиям, но не уже 10:00–21:00 */
+function workWindow(occ) {
+  let from = 10 * 60, to = 21 * 60;
+  occ.forEach(o => {
+    const a = minutesOf(o.time), b = a + (o.dur || 60);
+    if (a < from) from = a;
+    if (b > to) to = b;
+  });
+  return { from: Math.floor(from / 60) * 60, to: Math.ceil(to / 60) * 60 };
+}
+
+/** Свободные промежутки по дням недели, не короче minGap минут */
+function freeGaps(occ, minGap) {
+  const w = workWindow(occ);
+  const gap = minGap || 60;
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = occ.filter(o => wdIdx(parseKey(o.date)) === i && SKIPPED.indexOf(o.st) < 0)
+      .map(o => ({ a: minutesOf(o.time), b: minutesOf(o.time) + (o.dur || 60) }))
+      .sort((x, y) => x.a - y.a);
+    // склеиваем пересечения
+    const busy = [];
+    day.forEach(x => {
+      const last = busy[busy.length - 1];
+      if (last && x.a <= last.b) last.b = Math.max(last.b, x.b); else busy.push({ a: x.a, b: x.b });
+    });
+    const gaps = [];
+    let cur = w.from;
+    busy.forEach(x => {
+      if (x.a - cur >= gap) gaps.push({ a: cur, b: x.a });
+      cur = Math.max(cur, x.b);
+    });
+    if (w.to - cur >= gap) gaps.push({ a: cur, b: w.to });
+    return { wd: i, busy: busy, gaps: gaps, free: gaps.reduce((acc, g) => acc + (g.b - g.a), 0) };
+  });
+}
+
+/** Карточка «Свободные окна» для страницы расписания */
+function freeCard(occ) {
+  const w = workWindow(occ);
+  const span = Math.max(1, w.to - w.from);
+  const days = freeGaps(occ, 60);
+  const freeMin = days.reduce((a, d) => a + d.free, 0);
+  const busyMin = days.reduce((a, d) => a + d.busy.reduce((x, b) => x + (b.b - b.a), 0), 0);
+  const rate = DB.settings.wishPrice || DB.settings.defaultPrice || 0;
+  const nLessons = occ.filter(o => SKIPPED.indexOf(o.st) < 0).length;
+  const goal = DB.settings.workGoal || 25;
+  const left = goal - nLessons;
+
+  return `<div class="card" style="margin-top:14px">
+    <div class="card-head"><div><div class="card-title">Свободные окна</div>
+      <div class="card-sub">Промежутки от часа между занятиями этой недели, с ${hhmm(w.from)} до ${hhmm(w.to)}</div></div></div>
+
+    <div class="grid cols-3" style="margin-bottom:14px">
+      <div class="stat"><div class="label">Свободно</div><div class="value">${Math.round(freeMin / 60)}<small> ч</small></div>
+        <div class="delta">${days.reduce((a, d) => a + d.gaps.length, 0)} ${plural(days.reduce((a, d) => a + d.gaps.length, 0), 'окно', 'окна', 'окон')} · занято ${Math.round(busyMin / 60)} ч</div></div>
+      <div class="stat"><div class="label">Занятий в неделю</div><div class="value">${nLessons}<small> / ${goal}</small></div>
+        <div class="delta">${left > 0 ? 'до цели ещё ' + left : 'цель закрыта'}</div></div>
+      <div class="stat"><div class="label">${left > 0 ? 'Если добрать до цели' : 'Сверх цели'}</div>
+        <div class="value">${moneyShort(Math.abs(left) * rate)}<small> ₽</small></div>
+        <div class="delta">${left > 0 ? left + ' ' + plural(left, 'занятие', 'занятия', 'занятий') + ' по ' + money(rate) : 'в неделю'}</div></div>
+    </div>
+
+    <div class="freegrid">
+      ${days.map(d => `<div class="free-row">
+        <span class="free-day ${d.free ? '' : 'full'}">${DAYS_SHORT[d.wd]}</span>
+        <div class="free-track">
+          ${d.busy.map(b => `<i class="busy" style="left:${(b.a - w.from) / span * 100}%;width:${(b.b - b.a) / span * 100}%"
+            title="Занято ${hhmm(b.a)}–${hhmm(b.b)}"></i>`).join('')}
+          ${d.gaps.map(g => `<i class="free" style="left:${(g.a - w.from) / span * 100}%;width:${(g.b - g.a) / span * 100}%"
+            title="Свободно ${hhmm(g.a)}–${hhmm(g.b)}"><span>${hhmm(g.a)}–${hhmm(g.b)}</span></i>`).join('')}
+        </div>
+        <span class="free-sum">${d.free ? Math.round(d.free / 60 * 10) / 10 + ' ч' : '—'}</span>
+      </div>`).join('')}
+      <div class="free-row free-scale">
+        <span class="free-day"></span>
+        <div class="free-track">${(() => { const out = []; for (let m = w.from; m <= w.to; m += 120)
+      out.push(`<span style="left:${(m - w.from) / span * 100}%">${hhmm(m)}</span>`); return out.join(''); })()}</div>
+        <span class="free-sum"></span>
+      </div>
+    </div>
+    <div class="muted small" style="margin-top:9px">Считается по этой неделе, поэтому занятия раз в две недели и раз в месяц учитываются там, где они реально стоят.</div>
+  </div>`;
+}
+
 /* ---------- модалка занятия (разовое / правка) ---------- */
 function targetOptions(kind, sel) {
   if (kind === 'group') return DB.groups.filter(g => !g.archived).map(g => `<option value="${g.id}" ${g.id === sel ? 'selected' : ''}>${esc(g.name)}</option>`).join('');
@@ -2027,6 +2199,35 @@ function lessonModal(o) {
           : `<label class="chk ${o.paid ? 'on' : ''}" id="lPaidOne"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>`}
       </div>
       <div class="muted small ${o.st === 'move' || o.st === 'cancel' ? '' : 'hidden'}" id="lNoPay">Перенос и отмена не оплачиваются</div>
+
+      ${(() => {
+      const pr = occProgram(o);
+      if (!pr) return '';
+      const ids = studentsOnProgram(o, pr.program, pr.subject);
+      if (!ids.length) return '';
+      const nt = nextTopics(pr.program, ids, 8);
+      const row = t => { const on = ids.every(id => (student(id) || { topics: {} }).topics[t.id]);
+        const some = !on && ids.some(id => (student(id) || { topics: {} }).topics[t.id]);
+        return `<label class="chk lTopic ${on ? 'on' : ''}"><input type="checkbox" class="lTop" value="${t.id}" ${on ? 'checked' : ''}> ${esc(t.t)}${some ? ' <span class="muted small">(не у всех)</span>' : ''}</label>`; };
+      return `<div class="card lblock" style="background:var(--surface-2);box-shadow:none;margin-top:14px">
+          <div class="card-title">Что прошли</div>
+          <div class="muted small" style="margin:3px 0 8px">${esc(pr.program.name)}${ids.length > 1 ? ' · отметится у всех ' + ids.length : ''}</div>
+          <div class="checks" id="lTopList">${nt.list.map(row).join('')}</div>
+          ${nt.all.length > nt.list.length ? '<button class="btn btn-sm btn-ghost" id="lTopAll" type="button" style="margin-top:7px">Показать все темы</button>' : ''}
+        </div>`;
+    })()}
+
+      <div class="card lblock" style="background:var(--surface-2);box-shadow:none;margin-top:14px">
+        <div class="card-title">Домашнее задание</div>
+        <div class="muted small" style="margin:3px 0 8px">${(o.roster || []).length > 1
+      ? 'Выдастся всем участникам занятия (' + o.roster.length + ')' : 'Можно оставить пустым'}</div>
+        <textarea id="lHw" placeholder="Например: §14, задачи 3–8; вариант 5 из сборника"></textarea>
+        <div class="row" style="margin-top:8px">
+          <div class="field" style="max-width:200px"><label>К какой дате</label>
+            <input type="date" id="lHwDue" value="${esc(key(addDays(parseKey(o.date), 7)))}"></div>
+        </div>
+      </div>
+
       <div class="field" style="margin-top:12px"><label>Заметка к занятию</label>
         <textarea id="lNote" placeholder="Что прошли, что задать к следующему разу…">${esc(o.note)}</textarea></div>
 
@@ -2077,6 +2278,18 @@ function lessonModal(o) {
       $$('.lPay1').forEach(c => { c.checked = false; c.closest('.chk').classList.remove('on'); });
     }
   };
+  if ($('#lTopAll')) $('#lTopAll').onclick = () => {
+    const pr = occProgram(o); if (!pr) return;
+    const ids = studentsOnProgram(o, pr.program, pr.subject);
+    $('#lTopList').innerHTML = realTopics(pr.program).map(t => {
+      const on = ids.every(id => (student(id) || { topics: {} }).topics[t.id]);
+      return `<label class="chk lTopic ${on ? 'on' : ''}"><input type="checkbox" class="lTop" value="${t.id}" ${on ? 'checked' : ''}> ${esc(t.t)}</label>`;
+    }).join('');
+    $('#lTopAll').remove();
+    $$('.lTop').forEach(c => c.onchange = e => e.target.closest('.chk').classList.toggle('on', e.target.checked));
+  };
+  $$('.lTop').forEach(c => c.onchange = e => e.target.closest('.chk').classList.toggle('on', e.target.checked));
+
   if ($('#lDelOne')) $('#lDelOne').onclick = () => confirmBox('Удалить занятие ' + fmtDate(d) + ' у «'
     + targetName(o.kind, o.refId) + '»? Отметка о нём тоже пропадёт.', () => {
       DB.extra = (DB.extra || []).filter(e => e.id !== o.id);
@@ -2107,7 +2320,40 @@ function lessonModal(o) {
       patch.paid = $('#lPaid') ? $('#lPaid').checked : false;
     }
     setMark(o.id, patch);
-    save(); closeModal(); render(true); toast('Сохранено');
+
+    // пройденные темы — всем участникам, кто идёт по этой программе
+    let nTop = 0;
+    const pr = occProgram(o);
+    if (pr) {
+      const ids = studentsOnProgram(o, pr.program, pr.subject);
+      $$('.lTop').forEach(c => {
+        ids.forEach(id => {
+          const st = student(id); if (!st) return;
+          const d = doneMap(st);
+          if (c.checked && !d[c.value]) { d[c.value] = o.date; nTop++; }
+          else if (!c.checked && d[c.value]) { delete d[c.value]; }
+        });
+      });
+    }
+
+    // домашка — одним текстом всем участникам занятия
+    let nHw = 0;
+    const hwText = ($('#lHw') ? $('#lHw').value : '').trim();
+    if (hwText) {
+      if (!DB.hw) DB.hw = [];
+      const due = $('#lHwDue').value || key(addDays(parseKey(o.date), 7));
+      (o.roster || []).forEach(id => {
+        if (!student(id)) return;
+        DB.hw.push({ id: 'h' + uid(), studentId: id, date: o.date, due: due, text: hwText, done: false, grade: null });
+        nHw++;
+      });
+    }
+
+    save(); closeModal(); render(true);
+    const parts = [];
+    if (nTop) parts.push('тем отмечено: ' + nTop);
+    if (nHw) parts.push('домашка выдана: ' + nHw);
+    toast(parts.length ? 'Занятие закрыто · ' + parts.join(' · ') : 'Сохранено');
   };
 }
 
@@ -2457,10 +2703,12 @@ function studentCard(s) {
       <div id="stTopics" style="margin-top:16px">${topicsPanel(s)}</div>
     </div>
     <div class="modal-foot"><button class="btn" data-close>Закрыть</button>
+      <button class="btn" id="cReport">Отчёт за месяц</button>
       <button class="btn" id="cAccess">${accessOf(s) ? 'Доступ выдан' : 'Доступ ученику'}</button>
       <button class="btn btn-primary" id="cEdit">Изменить данные</button></div>`);
   const refreshTopics = () => { const box = $('#stTopics'); if (box) { box.innerHTML = topicsPanel(s); wireTopics(refreshTopics); } };
   wireTopics(refreshTopics);
+  $('#cReport').onclick = () => { closeModal(); reportModal(s, dashMonth); };
   $('#cAccess').onclick = () => { closeModal(); accessModal(s); };
   $('#cEdit').onclick = () => { closeModal(); studentModal(s); };
   if ($('#cAbon')) $('#cAbon').onclick = () => confirmBox(
@@ -2917,6 +3165,86 @@ const gradeColor = w => {
   return good ? 'color:var(--st-good)' : (bad ? 'color:var(--st-crit)' : 'color:var(--st-warn)');
 };
 
+/* ---------- слабые места по заданиям ---------- */
+
+/** Сводка по номерам заданий: сколько раз решал и какой процент набрал */
+function weakSpots(works) {
+  const by = {};
+  works.forEach(w => (w.tasks || []).forEach((t, i) => {
+    const max = +t.max || 0;
+    if (!max) return;
+    const n = i + 1;
+    const r = by[n] || (by[n] = { n: n, tries: 0, got: 0, max: 0, full: 0, zero: 0, who: {} });
+    const got = +t.got || 0;
+    r.tries++; r.got += got; r.max += max;
+    if (got >= max) r.full++;
+    if (!got) { r.zero++; r.who[w.studentId] = (r.who[w.studentId] || 0) + 1; }
+  }));
+  return Object.keys(by).map(k => {
+    const r = by[k];
+    r.pct = r.max ? Math.round(r.got / r.max * 100) : 0;
+    return r;
+  }).sort((a, b) => a.n - b.n);
+}
+
+/** Какие задания стоит разобрать: решали хотя бы дважды и набрали меньше порога */
+function weakList(works, minTries, maxPct) {
+  return weakSpots(works)
+    .filter(r => r.tries >= (minTries || 2) && r.pct <= (maxPct || 60))
+    .sort((a, b) => a.pct - b.pct || b.tries - a.tries);
+}
+
+/** Карточка «Что разобрать» */
+function weakCard(works, forOne) {
+  const all = weakSpots(works);
+  if (!all.length) {
+    return `<div class="card">
+      <div class="card-head"><div><div class="card-title">Что разобрать</div>
+        <div class="card-sub">Появится, когда внесёте разбор хотя бы одной работы по заданиям</div></div></div>
+      <div class="empty small">Пока нет работ с разбором по номерам заданий</div></div>`;
+  }
+  const weak = weakList(works);
+  const solid = all.filter(r => r.tries >= 2 && r.pct >= 90).length;
+  const worst = weak.slice(0, 12);
+  const maxTries = Math.max.apply(null, all.map(r => r.tries));
+
+  return `<div class="card">
+    <div class="card-head"><div><div class="card-title">Что разобрать</div>
+      <div class="card-sub">${forOne ? 'Задания, которые стабильно не даются' : 'Задания, которые чаще всего проваливают'} · по ${works.length} ${plural(works.length, 'работе', 'работам', 'работам')}</div></div></div>
+
+    <div class="grid cols-3" style="margin-bottom:14px">
+      <div class="stat"><div class="label">Проседают</div><div class="value">${weak.length}</div><div class="delta">${plural(weak.length, 'задание', 'задания', 'заданий')} ниже 60%</div></div>
+      <div class="stat"><div class="label">Уверенно</div><div class="value">${solid}</div><div class="delta">${plural(solid, 'задание', 'задания', 'заданий')} от 90%</div></div>
+      <div class="stat"><div class="label">Разобрано заданий</div><div class="value">${all.length}</div><div class="delta">номеров встречалось в работах</div></div>
+    </div>
+
+    ${worst.length ? `<div class="weak">${worst.map(r => `
+      <div class="weak-row">
+        <span class="weak-n">№${r.n}</span>
+        <div class="grow">
+          <div class="weak-bar"><i class="${r.pct < 35 ? 'crit' : (r.pct < 60 ? 'warn' : '')}" style="width:${Math.max(2, r.pct)}%"></i></div>
+          <div class="muted small" style="margin-top:3px">решал ${r.tries} ${plural(r.tries, 'раз', 'раза', 'раз')} · полностью ${r.full} · ноль ${r.zero}${forOne ? '' : whoText(r)}</div>
+        </div>
+        <b class="weak-pct ${r.pct < 35 ? 'crit' : (r.pct < 60 ? 'warn' : '')}">${r.pct}%</b>
+      </div>`).join('')}</div>`
+      : '<div class="empty small">Проваленных заданий нет — всё выше 60% 👍</div>'}
+
+    <details style="margin-top:12px">
+      <summary class="muted small" style="cursor:pointer">Все задания по порядку</summary>
+      <div class="tasks-mini" style="margin-top:9px">${all.map(r =>
+      `<span class="tm ${r.pct >= 90 ? 'f' : (r.pct >= 60 ? 'p' : 'z')}" title="Задание ${r.n}: ${r.pct}% за ${r.tries} ${plural(r.tries, 'попытку', 'попытки', 'попыток')}">${r.n}</span>`).join('')}</div>
+      <div class="muted small" style="margin-top:6px">Зелёные — от 90%, жёлтые — от 60%, серые — ниже. Всего попыток по самому частому заданию: ${maxTries}.</div>
+    </details>
+  </div>`;
+}
+
+/** Кто именно заваливает это задание */
+function whoText(r) {
+  const names = Object.keys(r.who).sort((a, b) => r.who[b] - r.who[a]).slice(0, 3)
+    .map(id => firstName((student(id) || {}).name || '—'));
+  return names.length ? ' · чаще всего ' + names.join(', ') : '';
+}
+
 function studentOptions(sel, allLabel) {
   return (allLabel ? '<option value="all">' + allLabel + '</option>' : '')
     + activeStudents().sort((a, b) => a.name.localeCompare(b.name, 'ru'))
@@ -2983,9 +3311,9 @@ function viewProgress() {
         <td>${esc(h.text)}</td>
         <td class="nowrap muted small">${h.due ? fmtDate(parseKey(h.due)) : '—'}</td>
         <td><button class="pay-btn ${h.done ? 'on' : ''}" data-hwdone="${h.id}">${h.done ? '✓ сделано' : (h.due && h.due < todayKey() ? '✕ просрочено' : '· не сдано')}</button></td>
-        <td><select class="grade-sel" data-hwgrade="${h.id}">
+        <td><select class="grade-sel ${h.auto2 ? 'auto2' : ''}" data-hwgrade="${h.id}" title="${h.auto2 ? 'Двойка поставлена автоматически за просрочку' : ''}">
           ${['', '5', '4', '3', '2'].map(g => `<option value="${g}" ${String(h.grade || '') === g ? 'selected' : ''}>${g || '—'}</option>`).join('')}
-        </select></td>
+        </select>${h.auto2 ? '<div class="muted" style="font-size:10px;margin-top:2px">автоматом</div>' : ''}</td>
         <td class="nowrap"><button class="btn btn-sm btn-ghost" data-hwedit="${h.id}">✎</button>
           <button class="btn btn-sm btn-ghost" data-hwdel="${h.id}">✕</button></td>
       </tr>`).join('')}</tbody></table></div>`
@@ -3021,6 +3349,8 @@ function viewProgress() {
       : '<div class="empty small">Работ пока нет. Нажмите «+ Работа», чтобы внести пробник или контрольную.</div>'}
   </div>
 
+  ${weakCard(works, progStudent !== 'all')}
+
   ${progStudent !== 'all' && student(progStudent)
       ? `<div class="card" id="progTopics">${topicsPanel(student(progStudent))}</div>`
       : '<div class="card"><div class="empty small">Пройденные темы показываются, когда выбран конкретный ученик — выберите его в списке вверху страницы.</div></div>'}`;
@@ -3035,11 +3365,15 @@ function viewProgress() {
   $$('[data-hwdone]').forEach(b => b.onclick = () => {
     const h = hwList().find(x => x.id === b.dataset.hwdone);
     h.done = !h.done; h.doneAt = h.done ? todayKey() : null;
+    if (h.done) { clearAutoFail(h); h.noAuto = 1; }
+    else delete h.noAuto;
     save(); render(true);
   });
   $$('[data-hwgrade]').forEach(sel => sel.onchange = () => {
     const h = hwList().find(x => x.id === sel.dataset.hwgrade);
     h.grade = +sel.value || null;
+    delete h.auto2;
+    h.noAuto = 1;                               // дальше оценкой распоряжается репетитор
     if (h.grade && !h.done) { h.done = true; h.doneAt = todayKey(); }
     save(); render(true);
   });
@@ -3077,6 +3411,36 @@ function viewProgress() {
 }
 
 const fmtShort = k => { const d = parseKey(k); return d.getDate() + ' ' + MONTHS_S[d.getMonth()]; };
+
+/* ---------- автоматическая двойка за просрочку ---------- */
+
+/** Просрочено ли задание (с учётом отсрочки из настроек) */
+function hwOverdue(h, grace) {
+  if (h.done || !h.due) return false;
+  const g = grace == null ? (+DB.settings.autoFailDays || 0) : grace;
+  return key(addDays(parseKey(h.due), g)) < todayKey();
+}
+
+/** Поставить 2 за несданную вовремя домашку. Руками выставленные оценки не трогаем. */
+function applyAutoFail() {
+  if (!DB || !DB.settings || DB.settings.autoFail === false) return 0;
+  let n = 0;
+  (DB.hw || []).forEach(h => {
+    if (h.noAuto) return;                       // репетитор снял оценку вручную
+    if (h.grade != null && !h.auto2) return;    // оценка уже стоит и она не автоматическая
+    if (!hwOverdue(h)) return;
+    if (h.grade === 2 && h.auto2) return;
+    h.grade = 2; h.auto2 = 1; n++;
+  });
+  return n;
+}
+
+/** Снять автоматическую двойку — когда задание всё-таки сдали */
+function clearAutoFail(h) {
+  if (!h.auto2) return;
+  delete h.auto2;
+  h.grade = null;
+}
 
 /* ---------- домашнее задание ---------- */
 function hwModal(h) {
@@ -3346,6 +3710,197 @@ function workModal(w) {
     save(); closeModal(); render(true); toast('Сохранено');
   };
 }
+
+/* =========================================================
+   ОТЧЁТ РОДИТЕЛЮ ЗА МЕСЯЦ
+   Собирается из тех же данных, что и кабинет: посещаемость,
+   домашние задания, работы и пройденные темы. Денег здесь нет.
+   ========================================================= */
+
+let reportMonth = '';
+
+/** Всё, что нужно для отчёта по ученику за месяц */
+function reportData(s, mk) {
+  const from = mk + '-01';
+  const to = key(new Date(+mk.slice(0, 4), +mk.slice(5, 7), 0));
+  const occ = occurrences(from, to).filter(o => inOcc(o, s.id));
+  const cnt = { done: 0, miss: 0, move: 0, cancel: 0, plan: 0 };
+  occ.forEach(o => { const st = stOf(o, s.id); cnt[st] = (cnt[st] || 0) + 1; });
+  const held = cnt.done + cnt.miss;
+  const att = held ? Math.round(cnt.done / held * 100) : null;
+
+  const inMonth = d => d && d >= from && d <= to;
+  const hw = (DB.hw || []).filter(h => h.studentId === s.id && (inMonth(h.due) || inMonth(h.date)));
+  const hwGraded = hw.filter(h => +h.grade);
+  const hwAvg = hwGraded.length
+    ? Math.round(hwGraded.reduce((a, h) => a + (+h.grade), 0) / hwGraded.length * 10) / 10 : null;
+
+  const works = (DB.works || []).filter(w => w.studentId === s.id && inMonth(w.date))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const prevWorks = (DB.works || []).filter(w => w.studentId === s.id && w.date < from)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // темы, отмеченные в этом месяце
+  const done = doneMap(s);
+  const progs = studentPrograms(s).map(x => {
+    const real = realTopics(x.program);
+    return {
+      subject: x.subject, name: x.program.name,
+      total: real.length,
+      done: real.filter(t => done[t.id]).length,
+      month: real.filter(t => inMonth(done[t.id])),
+      next: real.filter(t => !done[t.id]).slice(0, 5)
+    };
+  });
+
+  return { occ: occ, cnt: cnt, held: held, att: att, hw: hw, hwGraded: hwGraded, hwAvg: hwAvg,
+    works: works, prevWorks: prevWorks, progs: progs, from: from, to: to };
+}
+
+function reportModal(s, mk) {
+  reportMonth = mk || reportMonth || todayKey().slice(0, 7);
+  const draw = () => {
+    const r = reportData(s, reportMonth);
+    const y = +reportMonth.slice(0, 4), m = +reportMonth.slice(5, 7);
+    const lastW = r.works[r.works.length - 1];
+    const prevW = r.works.length > 1 ? r.works[r.works.length - 2] : r.prevWorks[r.prevWorks.length - 1];
+    const delta = (lastW && prevW && lastW.scale === prevW.scale && lastW.grade != null && prevW.grade != null)
+      ? lastW.grade - prevW.grade : null;
+
+    return `
+    <div class="modal-head no-print">
+      <div><h3>Отчёт за месяц</h3>
+        <div class="muted small">${esc(s.name)} · ${monthLabel(reportMonth)}</div></div>
+      <button class="close-x" data-close>×</button></div>
+
+    <div class="modal-body">
+      <div class="no-print" style="display:flex;gap:7px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-sm" id="rPrev">←</button>
+        <b style="min-width:140px;text-align:center">${monthLabel(reportMonth)}</b>
+        <button class="btn btn-sm" id="rNext">→</button>
+        <span style="flex:1"></span>
+        <button class="btn btn-sm" id="rCopy">Скопировать текстом</button>
+        <button class="btn btn-sm btn-primary" id="rPrint">Печать / PDF</button>
+      </div>
+
+      <div class="report" id="reportBody">
+        <div class="rep-head">
+          <div>
+            <div class="rep-title">${esc(s.name)}</div>
+            <div class="rep-sub">${s.grade ? s.grade + ' класс · ' : ''}${esc(s.goal || '')} · отчёт за ${monthLabel(reportMonth).toLowerCase()}</div>
+          </div>
+          <div class="rep-tutor">${esc(DB.settings.owner || '')}</div>
+        </div>
+
+        <div class="rep-grid">
+          <div class="rep-stat"><span>Занятий проведено</span><b>${r.cnt.done}</b></div>
+          <div class="rep-stat"><span>Посещаемость</span><b>${r.att == null ? '—' : r.att + '%'}</b></div>
+          <div class="rep-stat"><span>Домашних заданий</span><b>${r.hw.length}</b></div>
+          <div class="rep-stat"><span>Средняя за домашку</span><b>${r.hwAvg == null ? '—' : r.hwAvg}</b></div>
+        </div>
+
+        <div class="rep-sec">
+          <h4>Посещаемость</h4>
+          ${r.held || r.cnt.move || r.cnt.cancel ? `<ul class="rep-list">
+            <li>Был на занятии — <b>${r.cnt.done}</b></li>
+            ${r.cnt.miss ? `<li>Пропустил без предупреждения — <b>${r.cnt.miss}</b></li>` : ''}
+            ${r.cnt.move ? `<li>Перенесли — <b>${r.cnt.move}</b></li>` : ''}
+            ${r.cnt.cancel ? `<li>Отменили — <b>${r.cnt.cancel}</b></li>` : ''}
+            ${r.cnt.plan ? `<li>${r.to < todayKey() ? 'Без отметки о посещении' : 'Ещё впереди в этом месяце'} — <b>${r.cnt.plan}</b></li>` : ''}
+          </ul>` : '<p class="rep-empty">Занятий в этом месяце не было</p>'}
+        </div>
+
+        <div class="rep-sec">
+          <h4>Домашние задания</h4>
+          ${r.hw.length ? `<table class="rep-tbl">
+            <thead><tr><th>Срок</th><th>Задание</th><th>Статус</th><th>Оценка</th></tr></thead>
+            <tbody>${r.hw.map(h => `<tr>
+              <td class="nowrap">${h.due ? fmtDate(parseKey(h.due)) : '—'}</td>
+              <td>${esc(h.text)}</td>
+              <td class="nowrap">${h.done ? 'выполнено' : (h.due && h.due < todayKey() ? 'не сдано в срок' : 'в работе')}</td>
+              <td class="nowrap"><b>${h.grade || '—'}</b>${h.auto2 ? ' <span class="rep-dim">за просрочку</span>' : ''}</td>
+            </tr>`).join('')}</tbody></table>`
+          : '<p class="rep-empty">В этом месяце домашних заданий не было</p>'}
+        </div>
+
+        <div class="rep-sec">
+          <h4>Контрольные и пробники</h4>
+          ${r.works.length ? `<table class="rep-tbl">
+            <thead><tr><th>Дата</th><th>Работа</th><th>Первичный балл</th><th>Результат</th></tr></thead>
+            <tbody>${r.works.map(w => `<tr>
+              <td class="nowrap">${fmtDate(parseKey(w.date))}</td>
+              <td>${esc(w.title || w.type)}</td>
+              <td class="nowrap">${workPrimary(w)} из ${workMax(w)} · ${workPct(w)}%</td>
+              <td class="nowrap"><b>${w.grade == null ? '—' : w.grade}</b> ${w.scale === 100 ? 'из 100' : 'из 5'}</td>
+            </tr>`).join('')}</tbody></table>
+            ${delta != null ? `<p class="rep-note">${delta > 0 ? 'Рост на ' + delta + ' по сравнению с предыдущей работой.'
+              : (delta < 0 ? 'Снижение на ' + Math.abs(delta) + ' по сравнению с предыдущей работой.' : 'Результат на уровне предыдущей работы.')}</p>` : ''}`
+          : '<p class="rep-empty">В этом месяце работ не писали</p>'}
+        </div>
+
+        ${r.progs.map(pg => `<div class="rep-sec">
+          <h4>Программа · ${esc(subjLabel(pg.subject))}</h4>
+          <p class="rep-note">${esc(pg.name)} — пройдено <b>${pg.done}</b> из ${pg.total} тем (${pg.total ? Math.round(pg.done / pg.total * 100) : 0}%)</p>
+          <div class="rep-bar"><i style="width:${pg.total ? Math.round(pg.done / pg.total * 100) : 0}%"></i></div>
+          ${pg.month.length ? `<p class="rep-note"><b>Прошли за месяц:</b></p>
+            <ul class="rep-list">${pg.month.map(t => `<li>${esc(t.t)}</li>`).join('')}</ul>`
+          : '<p class="rep-empty">За этот месяц новых тем не отмечено</p>'}
+          ${pg.next.length ? `<p class="rep-note"><b>Дальше по плану:</b></p>
+            <ul class="rep-list rep-next">${pg.next.map(t => `<li>${esc(t.t)}</li>`).join('')}</ul>` : ''}
+        </div>`).join('')}
+
+        <div class="rep-foot">Отчёт сформирован ${fmtDateFull(new Date())} · личный кабинет ученика: ${esc(pupilUrl())}</div>
+      </div>
+    </div>
+    <div class="modal-foot no-print"><button class="btn" data-close>Закрыть</button></div>`;
+  };
+
+  const wire = () => {
+    $('#rPrev').onclick = () => {
+      const y = +reportMonth.slice(0, 4), m = +reportMonth.slice(5, 7);
+      reportMonth = key(new Date(y, m - 2, 1)).slice(0, 7);
+      openModal(draw()); wire();
+    };
+    $('#rNext').onclick = () => {
+      const y = +reportMonth.slice(0, 4), m = +reportMonth.slice(5, 7);
+      reportMonth = key(new Date(y, m, 1)).slice(0, 7);
+      openModal(draw()); wire();
+    };
+    $('#rPrint').onclick = () => window.print();
+    $('#rCopy').onclick = () => {
+      const t = reportText(s, reportMonth);
+      if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('Отчёт скопирован'), () => toast('Не удалось скопировать'));
+      else toast('Не удалось скопировать');
+    };
+  };
+
+  openModal(draw());
+  wire();
+}
+
+/** Короткая текстовая версия — чтобы отправить сообщением */
+function reportText(s, mk) {
+  const r = reportData(s, mk);
+  const L = [];
+  L.push(s.name + ' — ' + monthLabel(mk));
+  L.push('');
+  L.push('Занятий проведено: ' + r.cnt.done + (r.att == null ? '' : ' (посещаемость ' + r.att + '%)'));
+  if (r.cnt.miss) L.push('Пропусков без предупреждения: ' + r.cnt.miss);
+  if (r.hw.length) L.push('Домашних заданий: ' + r.hw.length
+    + ', выполнено ' + r.hw.filter(h => h.done).length
+    + (r.hwAvg == null ? '' : ', средняя оценка ' + r.hwAvg));
+  r.works.forEach(w => L.push('Работа «' + (w.title || w.type) + '» от ' + fmtDate(parseKey(w.date))
+    + ': ' + workPrimary(w) + ' из ' + workMax(w) + (w.grade == null ? '' : ', результат ' + w.grade + (w.scale === 100 ? ' из 100' : ' из 5'))));
+  r.progs.forEach(pg => {
+    L.push('');
+    L.push(subjLabel(pg.subject) + ': пройдено ' + pg.done + ' из ' + pg.total + ' тем');
+    if (pg.month.length) L.push('За месяц прошли: ' + pg.month.map(t => t.t).join('; '));
+    if (pg.next.length) L.push('Дальше: ' + pg.next.map(t => t.t).join('; '));
+  });
+  L.push('');
+  L.push('Личный кабинет: ' + pupilUrl());
+  return L.join('\n');
+}
 /* =========================================================
    ПРОГРАММЫ И ПРОЙДЕННЫЕ ТЕМЫ
    У каждой программы свой список тем, у ученика — отметки.
@@ -3498,6 +4053,39 @@ function studentProgram(s) {
   const list = studentPrograms(s);
   return list.length ? list[0].program : null;
 }
+/** Программа, по которой идёт это занятие: берём ту, что у большинства участников */
+function occProgram(o) {
+  const subj = o.subject === 'М' ? 'М' : 'Ф';
+  const cnt = {}, byId = {};
+  (o.roster || o.members || []).forEach(id => {
+    const s = student(id); if (!s) return;
+    const p = programFor(s, subj); if (!p) return;
+    cnt[p.id] = (cnt[p.id] || 0) + 1; byId[p.id] = p;
+  });
+  let best = null;
+  Object.keys(cnt).forEach(k => { if (!best || cnt[k] > cnt[best]) best = k; });
+  return best ? { program: byId[best], subject: subj } : null;
+}
+
+/** Кто из участников занятия идёт по этой программе */
+function studentsOnProgram(o, p, subj) {
+  return (o.roster || o.members || []).filter(id => {
+    const s = student(id); if (!s) return false;
+    const px = programFor(s, subj);
+    return px && px.id === p.id;
+  });
+}
+
+/** Темы для окна занятия: уже пройденные скрываем, показываем следующие по программе */
+function nextTopics(p, ids, limit) {
+  const real = realTopics(p);
+  // индекс последней темы, пройденной хоть кем-то из участников
+  let last = -1;
+  real.forEach((t, i) => { if (ids.some(id => (student(id) || { topics: {} }).topics[t.id])) last = i; });
+  const from = Math.max(0, last + 1 - 1);     // одну пройденную оставляем для ориентира
+  return { list: real.slice(from, from + (limit || 8)), all: real, from: from };
+}
+
 /** Суммарный прогресс по всем предметам */
 function progressAll(s) {
   let total = 0, done = 0;
@@ -3808,7 +4396,8 @@ function childSlice(s) {
     lessons: pupilLessons(s),
     hw: (DB.hw || []).filter(h => h.studentId === s.id).map(h => ({
       id: h.id, date: h.date || null, due: h.due || null, text: h.text || '',
-      done: !!h.done, doneAt: h.doneAt || null, grade: h.grade || null
+      done: !!h.done, doneAt: h.doneAt || null, grade: h.grade || null,
+      auto: h.auto2 ? 1 : 0
     })),
     works: (DB.works || []).filter(w => w.studentId === s.id).map(w => ({
       id: w.id, date: w.date || null, title: w.title || '', type: w.type || '',
@@ -4184,6 +4773,17 @@ function viewSettings() {
         <div class="field"><label>Налог, %</label><input type="number" id="cfTax" step="0.5" min="0" max="50" value="${s.taxRate}"><span class="hint">НПД: 4% с физлиц, 6% с юрлиц</span></div>
         <div class="field"><label>Цель занятий в неделю</label><input type="number" id="cfGoal" min="1" value="${s.workGoal}"></div>
       </div>
+      <div class="row">
+        <div class="field" style="flex:1 1 100%">
+          <label class="chk ${s.autoFail !== false ? 'on' : ''}" id="cfFailWrap" style="width:fit-content">
+            <input type="checkbox" id="cfFail" ${s.autoFail !== false ? 'checked' : ''}> Ставить 2 за домашку, не сданную в срок
+          </label>
+          <span class="hint">Оценка появляется сама и помечается «автоматом». Если отметить задание выполненным или поставить свою оценку — она снимается.</span>
+        </div>
+        <div class="field" style="max-width:200px"><label>Подождать после срока, дней</label>
+          <input type="number" id="cfFailDays" min="0" max="14" value="${+s.autoFailDays || 0}">
+          <span class="hint">0 — на следующий день после срока</span></div>
+      </div>
       <button class="btn btn-primary" id="cfSave">Сохранить настройки</button>
     </div>
 
@@ -4259,10 +4859,14 @@ function viewSettings() {
     s.wishPrice = +$('#cfWish').value || 0;
     s.taxRate = +$('#cfTax').value || 0;
     s.workGoal = +$('#cfGoal').value || 25;
+    s.autoFail = $('#cfFail').checked;
+    s.autoFailDays = clamp(+$('#cfFailDays').value || 0, 0, 14);
+    autoFailDay = '';                      // пересчитать с новыми правилами
     save();
 
   }
-  ['#cfOwner', '#cfPrice', '#cfGroup', '#cfWish', '#cfTax', '#cfGoal'].forEach(sel => {
+  $('#cfFail').onchange = e => $('#cfFailWrap').classList.toggle('on', e.target.checked);
+  ['#cfOwner', '#cfPrice', '#cfGroup', '#cfWish', '#cfTax', '#cfGoal', '#cfFailDays'].forEach(sel => {
     const el = $(sel); if (el) el.onchange = readSettings;
   });
   $('#cfSave').onclick = () => { readSettings(); render(true); toast('Настройки сохранены'); };
@@ -4345,9 +4949,15 @@ function isTyping() {
   const app = document.getElementById('app');
   return /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && app && app.contains(a);
 }
+let autoFailDay = '';
 function render(force) {
   if (!force && isTyping()) { pendingRender = true; return; }
   pendingRender = false;
+  // раз в день проставляем двойки за несданную вовремя домашку
+  if (DB && autoFailDay !== todayKey()) {
+    autoFailDay = todayKey();
+    if (applyAutoFail()) save();
+  }
   const on = document.getElementById('ownerName');
   if (on && DB) on.textContent = DB.settings.owner;
   $$('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.view === VIEW));
