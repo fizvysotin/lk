@@ -174,6 +174,82 @@ a{color:var(--brand)}
 .soc:hover{border-color:var(--brand);background:var(--brand-soft)}
 .soc-ic{font-size:20px;line-height:1}
 .soc b{font-weight:650}
+.soc-edit{padding-right:6px}
+.soc-go{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-decoration:none;color:inherit}
+.soc-go span:last-child{min-width:0;overflow:hidden}
+.soc-go .muted{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.soc-acts{display:flex;gap:2px;flex-shrink:0}
+.icon-pick{display:flex;flex-wrap:wrap;gap:6px}
+.icon-opt{
+  width:38px;height:38px;font-size:19px;line-height:1;cursor:pointer;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);
+}
+.icon-opt:hover{border-color:var(--brand)}
+.icon-opt.on{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 1px var(--brand) inset}
+.gmem{display:flex;flex-direction:column;gap:6px}
+.gmem-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gmem-row .chk{flex:1 1 170px}
+.gmem-since{display:flex;align-items:center;gap:6px;opacity:.4;transition:opacity .15s;flex-shrink:0}
+.gmem-row.on .gmem-since{opacity:1}
+.gmem-since>span{white-space:nowrap}
+.gmem-since input{width:146px}
+@media (max-width:620px){
+  .gmem-row .chk{flex:1 1 100%}
+  .gmem-since{padding-left:4px}
+}
+.pay-btn.pay-one.skip{opacity:.55;text-decoration:line-through;cursor:pointer}
+.gstat{display:flex;flex-direction:column;gap:6px}
+.gstat-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid var(--line)}
+.gstat-row:last-child{border-bottom:0}
+.gstat-name{flex:1 1 120px;font-weight:600;min-width:0}
+.gstat-segs{flex-shrink:0}
+.gstat-pay{flex-shrink:0;min-width:104px;justify-content:center}
+.gstat-row.off{opacity:.5}
+.gstat-row.off .gstat-pay{visibility:hidden}
+.subj-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.subj-tab{
+  display:flex;align-items:center;gap:7px;padding:7px 13px;cursor:pointer;font:inherit;font-weight:600;
+  border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);
+}
+.subj-tab:hover{border-color:var(--brand)}
+.subj-tab.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.subj-cnt{font-weight:600;font-size:12px;opacity:.75;font-variant-numeric:tabular-nums}
+
+/* разбор работы по заданиям */
+.tk-setup{margin-bottom:12px}
+.tk-setup>summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ink-2);padding:4px 0}
+.tk-setup>summary:hover{color:var(--brand)}
+.tks{display:flex;flex-wrap:wrap;gap:7px}
+.tk{
+  display:flex;flex-direction:column;gap:4px;align-items:center;padding:6px 8px 7px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);
+  min-width:62px;outline:none;
+}
+.tk:focus{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+.tk.f{background:var(--st-good-bg);border-color:var(--st-good)}
+.tk.p{background:var(--st-warn-bg);border-color:var(--st-warn)}
+.tk-n{font-weight:700;font-size:12.5px;display:flex;align-items:baseline;gap:4px;line-height:1}
+.tk-max{font-weight:500;font-size:10px;color:var(--muted)}
+.tk-chips{display:flex;gap:2px;align-items:center}
+.tk-chip{
+  width:21px;height:23px;padding:0;font:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+}
+.tk-chip:hover{border-color:var(--brand);color:var(--brand)}
+.tk-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.tk-inp{width:46px;height:23px;padding:0 4px;text-align:center;font-size:12px;font-weight:600}
+.tk-of{font-size:10px;color:var(--muted)}
+.bn-kid{
+  font:inherit;font-weight:700;font-size:inherit;cursor:pointer;padding:3px 11px;margin:0 2px;
+  border:0;border-radius:999px;background:rgba(255,255,255,.18);color:inherit;line-height:1.35;
+}
+.bn-kid:hover{background:rgba(255,255,255,.3)}
+.bn-kid.on{background:#fff;color:var(--brand)}
+@media (max-width:720px){
+  .tk{min-width:58px}
+  .tk-chip{width:24px;height:26px}
+}
 .err-box{
   background:var(--st-crit-bg);color:var(--st-crit);border-radius:var(--radius-sm);
   padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:12px;line-height:1.5;
@@ -642,7 +718,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
    ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
    ========================================================= */
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '3.5 · 9 сентября 2026, 12:00';
+const APP_VERSION = '3.6 · 1 октября 2026, 23:00';
 const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
 const moneyShort = n => {
   n = Math.round(n || 0);
@@ -678,6 +754,8 @@ function defaultDB() {
     hw: [],      // домашние задания
     works: [],   // контрольные и пробники
     programs: [],// программы по темам
+    social: [],  // ссылки на соцсети (редактируются во вкладке «Материалы»)
+    wtpl: [],    // свои шаблоны структуры работ
     marks: {}    // отметки: id занятия -> {st, paid, price, note}
   };
 }
@@ -776,7 +854,7 @@ function occId(slotId, dateKey) { return slotId + '@' + dateKey; }
 
 function markOf(id) { return DB.marks[id] || null; }
 
-/** Кто участвует в занятии: для группы — её состав, для индивидуального — сам ученик */
+/** Полный состав: для группы — все её ученики, для индивидуального — сам ученик */
 function membersOf(kind, refId) {
   if (kind === 'group') {
     const g = group(refId);
@@ -785,16 +863,44 @@ function membersOf(kind, refId) {
   return student(refId) ? [refId] : [refId];
 }
 
+/** Когда ученик пришёл в группу (пусто — значит с самого начала) */
+function joinedOn(g, studentId) { return (g && g.joined && g.joined[studentId]) || ''; }
+
+/** Состав группы на конкретную дату: кто к этому дню уже занимался */
+function membersOn(kind, refId, dateKey) {
+  if (kind !== 'group') return membersOf(kind, refId);
+  const g = group(refId);
+  if (!g) return [];
+  return (g.studentIds || []).filter(id => {
+    if (!student(id)) return false;
+    const j = joinedOn(g, id);
+    return !j || !dateKey || j <= dateKey;
+  });
+}
+
+/** Статусы, при которых занятие ученику не начисляется */
+const SKIPPED = ['move', 'cancel'];
+
 /** Доля ученика со скидкой, округлённая до 10 ₽ */
 const discShare = (base1, off) => off ? Math.round(base1 * (100 - off) / 100 / 10) * 10 : base1;
 
 function buildOcc(base) {
   const m = markOf(base.id) || {};
+  const st = m.st || 'plan';
   const price = m.price != null ? m.price : (base.price != null ? base.price : defaultPriceFor(base.kind, base.refId, base.dur));
-  const members = base.members && base.members.length
+  // полный список, под который посчитана цена занятия
+  const full = base.members && base.members.length
     ? base.members.filter(id => student(id)) : membersOf(base.kind, base.refId);
-  const n = Math.max(1, members.length);
-  const base1 = Math.round(price / n);
+  // кто из них реально занимался в этот день: пришедшие в группу позже — не в счёт
+  const roster = base.members && base.members.length
+    ? full : membersOn(base.kind, base.refId, base.date);
+  const base1 = Math.round(price / Math.max(1, full.length));
+  // отдельный статус ученика внутри группы: кто-то мог отменить занятие только для себя
+  const sst = m.sst || {};
+  const stMap = {};
+  roster.forEach(id => stMap[id] = (base.kind === 'group' && sst[id]) ? sst[id] : st);
+  // платят только те, у кого занятие не отменено и не перенесено
+  const members = roster.filter(id => SKIPPED.indexOf(stMap[id]) < 0);
   // персональная скидка (абонемент) хранится в отметке занятия по каждому ученику
   const disc = m.disc || {};
   const shares = {};
@@ -807,11 +913,13 @@ function buildOcc(base) {
   const paidIds = members.filter(id => payMap[id]);
   const allPaid = base.kind === 'group' ? (members.length > 0 && paidIds.length === members.length) : !!m.paid;
   return Object.assign({}, base, {
-    price: members.length ? sum : price,
+    price: members.length ? sum : (roster.length ? 0 : price),
     listPrice: price,
-    st: m.st || 'plan',
+    st: st,
     paid: allPaid,
+    roster: roster,
     members: members,
+    stMap: stMap,
     payMap: payMap,
     paidIds: paidIds,
     disc: disc,
@@ -821,6 +929,26 @@ function buildOcc(base) {
     note: m.note || '',
     time: m.time || base.time
   });
+}
+
+/** Статус занятия для конкретного ученика */
+const stOf = (o, id) => (o.stMap && o.stMap[id]) || o.st;
+/** Участвует ли ученик в этом занятии (есть в составе на эту дату) */
+const inOcc = (o, id) => (o.roster || o.members || []).indexOf(id) >= 0;
+
+/** Поставить статус занятия одному ученику группы */
+function setStatusFor(o, studentId, val) {
+  if (o.kind !== 'group') { setMark(o.id, { st: val }); return; }
+  const cur = DB.marks[o.id] || {};
+  const sst = Object.assign({}, cur.sst || {});
+  if (!val || val === (cur.st || 'plan')) delete sst[studentId]; else sst[studentId] = val;
+  const patch = { sst: Object.keys(sst).length ? sst : null };
+  // отменённое занятие оплачивать не нужно — снимаем галочку оплаты
+  if (SKIPPED.indexOf(val) >= 0 && cur.pay && cur.pay[studentId]) {
+    const pay = Object.assign({}, cur.pay); delete pay[studentId];
+    patch.pay = Object.keys(pay).length ? pay : null;
+  }
+  setMark(o.id, patch);
 }
 
 /** Сколько платит конкретный ученик за это занятие */
@@ -913,11 +1041,16 @@ function freezeSlotHistory(sl, upTo) {
     const id = occId(sl.id, k);
     const m = DB.marks[id];
     if (!m || have[id]) continue;
+    const roster = membersOn(sl.kind, sl.refId, k);
+    const raw = m.price != null ? m.price : (sl.price != null ? sl.price : defaultPriceFor(sl.kind, sl.refId, sl.dur));
+    // в группе цена считается с человека, поэтому замораживаем её под тот состав,
+    // который реально занимался в этот день
+    const fullN = Math.max(1, membersOf(sl.kind, sl.refId).length);
     DB.extra.push({
       id: id, date: k, time: m.time || sl.time, dur: sl.dur || 60,
       kind: sl.kind, refId: sl.refId, subject: sl.subject,
-      price: m.price != null ? m.price : (sl.price != null ? sl.price : defaultPriceFor(sl.kind, sl.refId, sl.dur)),
-      members: membersOf(sl.kind, sl.refId),
+      price: (sl.kind === 'group' && roster.length) ? Math.round(raw / fullN) * roster.length : raw,
+      members: roster,
       fromSlot: sl.id
     });
     have[id] = 1; n++;
@@ -948,12 +1081,13 @@ function resyncSlotPrices(kind, refId) {
 function totalsOf(list, studentId) {
   const t = { charged: 0, received: 0, prepaid: 0, prepaidN: 0, debt: 0, done: 0, miss: 0, move: 0, cancel: 0, plan: 0, lessons: 0, minutes: 0 };
   list.forEach(o => {
-    if (!o.members || o.members.indexOf(studentId) < 0) return;
-    t[o.st] = (t[o.st] || 0) + 1;
-    if (isCharged(o)) {
+    if (!inOcc(o, studentId)) return;
+    const st = stOf(o, studentId);
+    t[st] = (t[st] || 0) + 1;
+    if (CHARGED.indexOf(st) >= 0) {
       t.lessons++; t.charged += shareOf(o, studentId); t.minutes += (o.dur || 60);
       if (o.payMap[studentId]) t.received += shareOf(o, studentId);
-    } else if (o.st === 'plan' && o.payMap[studentId]) { t.prepaid += shareOf(o, studentId); t.prepaidN++; }
+    } else if (st === 'plan' && o.payMap[studentId]) { t.prepaid += shareOf(o, studentId); t.prepaidN++; }
   });
   t.debt = t.charged - t.received;
   t.income = t.received + t.prepaid;
@@ -980,7 +1114,8 @@ const discountFor = n => (ABON.find(x => n >= x.from) || { off: 0 }).off;
 
 /** Занятия ученика за месяц, которые входят в абонемент */
 function abonOcc(studentId, mk) {
-  return monthOcc(mk).filter(o => o.members.indexOf(studentId) >= 0 && o.st !== 'move' && o.st !== 'cancel');
+  return monthOcc(mk).filter(o => o.members.indexOf(studentId) >= 0
+    && SKIPPED.indexOf(stOf(o, studentId)) < 0);
 }
 
 /** Расчёт месячного абонемента: количество, скидка, суммы */
@@ -1025,6 +1160,7 @@ function setMark(id, patch) {
   if (!next.paid) delete next.paid;
   if (!next.pay || !Object.keys(next.pay).length) delete next.pay;
   if (!next.disc || !Object.keys(next.disc).length) delete next.disc;
+  if (!next.sst || !Object.keys(next.sst).length) delete next.sst;
   if (!next.note) delete next.note;
   if (Object.keys(next).length === 0) delete DB.marks[id]; else DB.marks[id] = next;
   save();
@@ -1324,7 +1460,7 @@ function showAuth(msg) {
 function normalizeDB(data) {
   const d = Object.assign(defaultDB(), data || {});
   d.settings = Object.assign(defaultDB().settings, d.settings || {});
-  ['students', 'groups', 'slots', 'extra', 'links', 'files', 'hw', 'works', 'programs'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+  ['students', 'groups', 'slots', 'extra', 'links', 'files', 'hw', 'works', 'programs', 'social', 'wtpl'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
   if (!d.marks || typeof d.marks !== 'object') d.marks = {};
   if (!d.access || typeof d.access !== 'object') d.access = {};
   // переход на «цену с человека» в группах
@@ -1362,6 +1498,20 @@ function normalizeDB(data) {
     const p = d.programs.find(x => x.exam === 'ЕГЭ' && x.subject === 'Ф');
     if (p && p.topics.length && !/^#/.test(p.topics[0].t)) p.topics.unshift({ id: 't' + uid(), t: '# Механика' });
     d.secFix1 = 1;
+  }
+  // у ученика может быть программа по каждому предмету, а не одна на всех
+  d.students.forEach(st => {
+    if (!st.programIds || typeof st.programIds !== 'object') st.programIds = {};
+    if (st.programId) {
+      const p = (d.programs || []).find(x => x.id === st.programId);
+      if (p && st.programIds[p.subject] === undefined) st.programIds[p.subject] = p.id;
+      delete st.programId;
+    }
+  });
+  // соцсети переехали из кода в базу — теперь их можно править
+  if (!d.socialInit) {
+    d.social = SOCIAL.map(s => Object.assign({ id: 's' + uid() }, s));
+    d.socialInit = 1;
   }
   return d;
 }
@@ -1515,8 +1665,8 @@ function viewDash() {
   const y = +mk.slice(0, 4), m = +mk.slice(5, 7);
   const prevMk = (m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0'));
   const tPrev = totals(monthOcc(prevMk));
-  const wOcc = occurrences(key(weekAnchor), key(addDays(weekAnchor, 6)));
-  const tw = totals(wOcc);
+
+
   const planWeek = DB.slots.filter(s => !s.archived).length;
   const planMinutes = DB.slots.filter(s => !s.archived).reduce((a, s) => a + (s.dur || 60), 0);
   const dToday = todayKey();
@@ -1604,24 +1754,6 @@ function viewDash() {
       <div id="chartMonths"></div>
     </div>
     <div class="card">
-      <div class="card-head">
-        <div>
-          <div class="card-title">Занятия по дням недели</div>
-          <div class="card-sub">${monthLabel(mk)} — сколько занятий проведено</div>
-        </div>
-      </div>
-      <div id="chartDays"></div>
-    </div>
-  </div>
-
-  <div class="grid cols-2" style="margin-top:14px">
-    <div class="card">
-      <div class="card-head"><div><div class="card-title">Сегодня · ${fmtDate(new Date())}</div>
-        <div class="card-sub">${today.length ? today.length + ' ' + plural(today.length, 'занятие', 'занятия', 'занятий') : 'Занятий нет'}</div></div>
-        <button class="btn btn-sm" data-go="week">Открыть расписание</button></div>
-      <div id="todayList"></div>
-    </div>
-    <div class="card">
       <div class="card-head"><div><div class="card-title">Посещаемость за месяц</div>
         <div class="card-sub">Всего отмечено занятий: ${total}</div></div></div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">
@@ -1634,6 +1766,25 @@ function viewDash() {
           <div class="grow"><div class="bar-mini"><i style="width:${total ? Math.round(n / total * 100) : 0}%"></i></div></div>
           <b class="num nowrap">${n}</b>
         </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:14px">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Сегодня · ${fmtDate(new Date())}</div>
+        <div class="card-sub">${today.length ? today.length + ' ' + plural(today.length, 'занятие', 'занятия', 'занятий') : 'Занятий нет'}</div></div>
+        <button class="btn btn-sm" data-go="week">Открыть расписание</button></div>
+      <div id="todayList"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Загрузка и ценник</div>
+        <div class="card-sub">По постоянному расписанию</div></div></div>
+      <div class="list-line"><div class="grow">Занятий в неделю</div><b>${planWeek} / ${DB.settings.workGoal}</b></div>
+      <div class="bar-mini" style="margin-bottom:8px"><i style="width:${clamp(Math.round(planWeek / (DB.settings.workGoal || 1) * 100), 0, 100)}%"></i></div>
+      <div class="list-line"><div class="grow">Часов в неделю</div><b>${Math.round(planMinutes / 60 * 10) / 10} ч</b></div>
+      <div class="list-line"><div class="grow">Желаемая цена занятия</div><b>${money(DB.settings.wishPrice)}</b></div>
+      <div class="list-line"><div class="grow">Фактический средний чек</div><b>${money(t.avg)}</b></div>
+      ${t.lessons && DB.settings.wishPrice > t.avg ? `<div class="list-line"><div class="grow muted small">Недобор до желаемой цены за месяц</div><b style="color:var(--st-crit)">${money((DB.settings.wishPrice - t.avg) * t.lessons)}</b></div>` : ''}
     </div>
   </div>
 
@@ -1653,27 +1804,6 @@ function viewDash() {
           </div>
         </div>`).join('') : '<div class="empty small">В этом месяце ещё нет проведённых занятий</div>'}
     </div>
-    <div>
-      <div class="card">
-        <div class="card-head"><div><div class="card-title">Текущая неделя</div>
-          <div class="card-sub">${fmtDate(weekAnchor)} — ${fmtDate(addDays(weekAnchor, 6))}</div></div></div>
-        <div class="grid cols-3">
-          <div><div class="muted small">Начислено</div><div style="font-size:20px;font-weight:700">${money(tw.charged)}</div></div>
-          <div><div class="muted small">Занятий</div><div style="font-size:20px;font-weight:700">${tw.lessons}</div></div>
-          <div><div class="muted small">Долг</div><div style="font-size:20px;font-weight:700">${money(tw.debt)}</div></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><div><div class="card-title">Загрузка и ценник</div>
-          <div class="card-sub">По постоянному расписанию</div></div></div>
-        <div class="list-line"><div class="grow">Занятий в неделю</div><b>${planWeek} / ${DB.settings.workGoal}</b></div>
-        <div class="bar-mini" style="margin-bottom:8px"><i style="width:${clamp(Math.round(planWeek / (DB.settings.workGoal || 1) * 100), 0, 100)}%"></i></div>
-        <div class="list-line"><div class="grow">Часов в неделю</div><b>${Math.round(planMinutes / 60 * 10) / 10} ч</b></div>
-        <div class="list-line"><div class="grow">Желаемая цена занятия</div><b>${money(DB.settings.wishPrice)}</b></div>
-        <div class="list-line"><div class="grow">Фактический средний чек</div><b>${money(t.avg)}</b></div>
-        ${t.lessons && DB.settings.wishPrice > t.avg ? `<div class="list-line"><div class="grow muted small">Недобор до желаемой цены за месяц</div><b style="color:var(--st-crit)">${money((DB.settings.wishPrice - t.avg) * t.lessons)}</b></div>` : ''}
-      </div>
-    </div>
   </div>`;
   $('#app').innerHTML = html;
 
@@ -1692,15 +1822,6 @@ function viewDash() {
     rows: rows,
     series: [{ name: 'Получено', color: 'var(--series-1)' }, { name: 'Ждём оплату', color: 'var(--series-2)' }],
     fmt: v => moneyShort(v), fmtTick: tickMoney, valueLabels: v => v ? moneyShort(v) : ''
-  });
-
-  // график по дням недели
-  const dayRows = DAYS_SHORT.map((d, i) => ({ label: d, vals: [0], n: 0, sum: 0, i: i }));
-  occ.forEach(o => { if (!isCharged(o)) return; const i = wdIdx(parseKey(o.date)); dayRows[i].vals[0]++; dayRows[i].sum += o.price; });
-  dayRows.forEach(r => r.tip = '<b>' + DAYS_FULL[r.i] + '</b>' + r.vals[0] + ' ' + plural(r.vals[0], 'занятие', 'занятия', 'занятий') + '<br>' + money(r.sum));
-  renderBars($('#chartDays'), {
-    rows: dayRows, series: [{ name: 'Занятий', color: 'var(--series-1)' }], integer: true,
-    fmt: v => Math.round(v), valueLabels: v => v ? Math.round(v) : ''
   });
 
   // сегодня
@@ -1739,10 +1860,13 @@ function lessonCard(o) {
       </span>
       ${o.st === 'move' || o.st === 'cancel' ? '<span class="muted small">не оплачивается</span>'
       : (o.kind === 'group'
-        ? `<span class="paylist">${o.members.map(id => {
+        ? `<span class="paylist">${(o.roster || []).map(id => {
             const st = student(id); if (!st) return '';
+            const cur = stOf(o, id);
+            if (SKIPPED.indexOf(cur) >= 0) return `<button class="pay-btn pay-one skip" data-act="more"
+              title="${esc(st.name)} — ${STATUS[cur].label.toLowerCase()}, не платит">${STATUS[cur].icon} ${esc(firstName(st.name))}</button>`;
             return `<button class="pay-btn pay-one ${o.payMap[id] ? 'on' : ''}" data-act="pay1" data-sid="${id}"
-              title="${esc(st.name)} · ${o.payMap[id] ? 'оплатил' : 'не оплатил'} ${money(o.perOne)}">${esc(firstName(st.name))}</button>`;
+              title="${esc(st.name)} · ${o.payMap[id] ? 'оплатил' : 'не оплатил'} ${money(shareOf(o, id))}">${esc(firstName(st.name))}</button>`;
           }).join('') || '<span class="muted small">состав группы не задан</span>'}</span>`
         : `<button class="pay-btn ${o.paid ? 'on' : ''}" data-act="pay" title="${paidTitle}">₽ ${o.paid ? 'оплачено' : 'не опл.'}</button>`)}
       ${o.note ? '<span class="badge" title="' + esc(o.note) + '">📝</span>' : ''}
@@ -1880,16 +2004,26 @@ function lessonModal(o) {
       <div class="row">
         <div class="field"><label>Время в этот день</label><input type="time" id="lTime" value="${esc(o.time)}">
           <span class="hint">Меняется только для этого занятия</span></div>
-        <div class="field"><label>Стоимость, ₽</label><input type="number" id="lPrice" step="50" value="${o.price}"></div>
+        <div class="field"><label>Стоимость, ₽</label><input type="number" id="lPrice" step="50" value="${o.listPrice}">
+          <span class="hint">${o.kind === 'group' && (o.roster || []).length > 1
+      ? 'на ' + o.roster.length + ' ' + plural(o.roster.length, 'ученика', 'учеников', 'учеников') + ' · ' + money(o.perOne) + ' с человека'
+      : 'за занятие'}</span></div>
       </div>
       <div class="field"><label>Статус</label>
         <select id="lSt">${Object.keys(STATUS).map(s => `<option value="${s}" ${o.st === s ? 'selected' : ''}>${STATUS[s].icon} ${STATUS[s].label}</option>`).join('')}</select></div>
       <div class="${o.st === 'move' || o.st === 'cancel' ? 'hidden' : ''}" id="lPaidWrap">
         ${o.kind === 'group'
-          ? `<label>Оплата по ученикам · ${money(o.perOne)} с человека</label>
-             <div class="checks">${o.members.map(id => { const st = student(id); return st
-               ? `<label class="chk ${o.payMap[id] ? 'on' : ''}"><input type="checkbox" class="lPay1" value="${id}" ${o.payMap[id] ? 'checked' : ''}> ${esc(st.name)}</label>`
-               : ''; }).join('') || '<span class="muted small">Состав группы не задан</span>'}</div>`
+          ? `<label>Ученики · ${money(o.perOne)} с человека</label>
+             <div class="muted small" style="margin-bottom:7px">У каждого свой статус: если кто-то отменил занятие только для себя,
+               поставьте ему отмену — платить он не будет, а занятие у остальных останется.</div>
+             <div class="gstat">${(o.roster || []).map(id => { const st = student(id); if (!st) return '';
+    const cur = stOf(o, id), free = SKIPPED.indexOf(cur) >= 0;
+    return `<div class="gstat-row ${free ? 'off' : ''}" data-grow="${id}">
+                 <span class="gstat-name">${esc(st.name)}</span>
+                 <span class="segs gstat-segs">${['done', 'miss', 'move', 'cancel'].map(x =>
+      `<button type="button" class="lSt1 ${cur === x ? 'on' : ''}" data-sid="${id}" data-s="${x}" title="${STATUS[x].label}">${STATUS[x].icon}</button>`).join('')}</span>
+                 <label class="chk gstat-pay ${o.payMap[id] ? 'on' : ''}"><input type="checkbox" class="lPay1" value="${id}" ${o.payMap[id] ? 'checked' : ''}> ${money(shareOf(o, id))}</label>
+               </div>`; }).join('') || '<span class="muted small">Состав группы не задан</span>'}</div>`
           : `<label class="chk ${o.paid ? 'on' : ''}" id="lPaidOne"><input type="checkbox" id="lPaid" ${o.paid ? 'checked' : ''}> Оплачено</label>`}
       </div>
       <div class="muted small ${o.st === 'move' || o.st === 'cancel' ? '' : 'hidden'}" id="lNoPay">Перенос и отмена не оплачиваются</div>
@@ -1918,6 +2052,22 @@ function lessonModal(o) {
 
   if ($('#lPaid')) $('#lPaid').onchange = e => $('#lPaidOne').classList.toggle('on', e.target.checked);
   $$('.lPay1').forEach(c => c.onchange = e => e.target.closest('.chk').classList.toggle('on', e.target.checked));
+  // личный статус ученика внутри группы
+  const perSt = {};
+  (o.roster || []).forEach(id => perSt[id] = stOf(o, id));
+  $$('.lSt1').forEach(b => b.onclick = () => {
+    const sid = b.dataset.sid;
+    const next = perSt[sid] === b.dataset.s ? ($('#lSt') ? $('#lSt').value : 'plan') : b.dataset.s;
+    perSt[sid] = next;
+    const row = $('[data-grow="' + sid + '"]');
+    $$('.lSt1').forEach(x => { if (x.dataset.sid === sid) x.classList.toggle('on', x.dataset.s === next); });
+    const free = SKIPPED.indexOf(next) >= 0;
+    if (row) row.classList.toggle('off', free);
+    if (free) {
+      const c = row && row.querySelector('.lPay1');
+      if (c) { c.checked = false; c.closest('.chk').classList.remove('on'); }
+    }
+  });
   $('#lSt').onchange = e => {
     const free = e.target.value === 'move' || e.target.value === 'cancel';
     $('#lPaidWrap').classList.toggle('hidden', free);
@@ -1950,6 +2100,9 @@ function lessonModal(o) {
       const pay = {};
       $$('.lPay1').filter(c => c.checked).forEach(c => pay[c.value] = 1);
       patch.pay = Object.keys(pay).length ? pay : null;
+      const sst = {};
+      Object.keys(perSt).forEach(sid => { if (perSt[sid] && perSt[sid] !== patch.st) sst[sid] = perSt[sid]; });
+      patch.sst = Object.keys(sst).length ? sst : null;
     } else {
       patch.paid = $('#lPaid') ? $('#lPaid').checked : false;
     }
@@ -2045,8 +2198,7 @@ function slotModal(s, wd, fromDate) {
 let stFilter = { q: '', mode: 'active' };
 
 function studentStats(id, mk) {
-  const occ = monthOcc(mk || dashMonth).filter(o => (o.kind === 'student' && o.refId === id)
-    || (o.kind === 'group' && (group(o.refId) || { studentIds: [] }).studentIds.indexOf(id) >= 0));
+  const occ = monthOcc(mk || dashMonth).filter(o => inOcc(o, id));
   return totalsOf(occ, id);
 }
 function slotsOf(kind, refId) {
@@ -2127,9 +2279,10 @@ function studentCardHtml(s) {
       : (grp.length ? '' : '<span class="badge">без постоянного расписания</span>')}
       ${grp.map(g => '<span class="badge badge-g">👥 Занятия в группе «' + esc(g.name) + '»</span>').join('')}
     </div>
-    ${(() => { const p = studentProgram(s); if (!p) return ''; const tot = realTopics(p).length, dn = doneCount(s, p);
-      return `<div class="small" style="margin-top:2px">Программа: <b>${esc(p.name)}</b> — пройдено ${dn} из ${tot}
-        <div class="bar-mini"><i style="width:${tot ? Math.round(dn / tot * 100) : 0}%"></i></div></div>`; })()}
+    ${(() => { const list = studentPrograms(s); if (!list.length) return '';
+      return list.map(x => { const tot = realTopics(x.program).length, dn = doneCount(s, x.program);
+        return `<div class="small" style="margin-top:2px">${list.length > 1 ? esc(subjLabel(x.subject)) + ': ' : 'Программа: '}<b>${esc(x.program.name)}</b> — пройдено ${dn} из ${tot}
+          <div class="bar-mini"><i style="width:${tot ? Math.round(dn / tot * 100) : 0}%"></i></div></div>`; }).join(''); })()}
     <div class="st-stats">
       <div><span class="muted">Занятий за месяц</span><b>${ab.n}</b></div>
       <div><span class="muted">Часов в месяц</span><b>${hoursText(ab.minutes)}</b></div>
@@ -2258,8 +2411,7 @@ function studentModal(s) {
 
 function studentCard(s) {
   const from = key(addDays(new Date(), -120)), to = key(addDays(new Date(), 14));
-  const hist = occurrences(from, to).filter(o => (o.kind === 'student' && o.refId === s.id)
-    || (o.kind === 'group' && (group(o.refId) || { studentIds: [] }).studentIds.indexOf(s.id) >= 0)).reverse();
+  const hist = occurrences(from, to).filter(o => inOcc(o, s.id)).reverse();
   const t = totalsOf(hist, s.id);
   const tm = studentStats(s.id);
   const ab = abonement(s.id, dashMonth);
@@ -2295,9 +2447,9 @@ function studentCard(s) {
           <td class="nowrap">${fmtDate(parseKey(o.date))}</td>
           <td class="nowrap muted">${esc(o.time)}</td>
           <td>${subjBadge(o.subject)}</td>
-          <td><span class="badge ${STATUS[o.st].cls}">${STATUS[o.st].icon} ${STATUS[o.st].label}</span></td>
-          <td class="num nowrap">${isCharged(o) ? money(shareOf(o, s.id)) : '—'}</td>
-          <td class="nowrap">${isCharged(o) ? (o.payMap[s.id] ? '<span class="badge badge-good">оплачено</span>' : '<span class="badge badge-crit">долг</span>') : ''}</td>
+          <td><span class="badge ${STATUS[stOf(o, s.id)].cls}">${STATUS[stOf(o, s.id)].icon} ${STATUS[stOf(o, s.id)].label}</span></td>
+          <td class="num nowrap">${CHARGED.indexOf(stOf(o, s.id)) >= 0 ? money(shareOf(o, s.id)) : '—'}</td>
+          <td class="nowrap">${CHARGED.indexOf(stOf(o, s.id)) >= 0 ? (o.payMap[s.id] ? '<span class="badge badge-good">оплачено</span>' : '<span class="badge badge-crit">долг</span>') : ''}</td>
         </tr>`).join('') : '<tr><td class="muted">Занятий пока нет</td></tr>'}
         </tbody></table>
       </div>
@@ -2331,7 +2483,14 @@ function groupModal(g) {
       <div class="field"><label>Предмет</label>
         <select id="gSubj">${['Ф', 'М', 'Ф,М'].map(x => `<option value="${x}" ${g && g.subject === x ? 'selected' : ''}>${subjLabel(x)}</option>`).join('')}</select></div>
       <div class="field"><label>Состав</label>
-        <div class="checks">${activeStudents().map(s => `<label class="chk ${ids.indexOf(s.id) >= 0 ? 'on' : ''}"><input type="checkbox" class="gSt" value="${s.id}" ${ids.indexOf(s.id) >= 0 ? 'checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">Сначала добавьте учеников</span>'}</div>
+        <div class="muted small" style="margin-bottom:7px">Если ученик пришёл в группу позже — укажите дату.
+          Занятия до неё не будут ни в его карточке, ни в его долгах.</div>
+        <div class="gmem">${activeStudents().map(s => { const on = ids.indexOf(s.id) >= 0;
+    return `<div class="gmem-row ${on ? 'on' : ''}" data-row="${s.id}">
+            <label class="chk ${on ? 'on' : ''}"><input type="checkbox" class="gSt" value="${s.id}" ${on ? 'checked' : ''}> ${esc(s.name)}</label>
+            <span class="gmem-since"><span class="muted small">в группе с</span>
+              <input type="date" class="gSince" data-sid="${s.id}" value="${esc(joinedOn(g, s.id))}" ${on ? '' : 'disabled'}></span>
+          </div>`; }).join('') || '<span class="muted small">Сначала добавьте учеников</span>'}</div>
       </div>
       <div class="field"><label>Заметка</label><textarea id="gNote">${g ? esc(g.note || '') : ''}</textarea></div>
     </div>
@@ -2341,20 +2500,43 @@ function groupModal(g) {
     const per = +$('#gPrice').value || 0;
     $('#gTotal').textContent = n ? n + ' × ' + money(per) + ' = ' + money(per * n) + ' за занятие' : 'Отметьте состав группы ниже';
   };
-  $$('.gSt').forEach(c => c.onchange = e => { e.target.closest('.chk').classList.toggle('on', e.target.checked); gTotal(); });
+  $$('.gSt').forEach(c => c.onchange = e => {
+    const on = e.target.checked, sid = e.target.value;
+    e.target.closest('.chk').classList.toggle('on', on);
+    const row = $('[data-row="' + sid + '"]');
+    if (row) row.classList.toggle('on', on);
+    const d = $('.gSince[data-sid="' + sid + '"]');
+    if (d) {
+      d.disabled = !on;
+      // нового человека по умолчанию считаем пришедшим сегодня
+      if (on && !d.value && ids.indexOf(sid) < 0) d.value = todayKey();
+      if (!on) d.value = '';
+    }
+    gTotal();
+  });
   $('#gPrice').oninput = gTotal;
   gTotal();
   $('#gSave').onclick = () => {
     const name = $('#gName').value.trim();
     if (!name) { toast('Введите название группы'); return; }
+    const picked = $$('.gSt').filter(c => c.checked).map(c => c.value);
+    const joined = {};
+    picked.forEach(sid => {
+      const d = $('.gSince[data-sid="' + sid + '"]');
+      if (d && d.value) joined[sid] = d.value;
+    });
     const data = {
       name: name, perStudent: +$('#gPrice').value || 0, subject: $('#gSubj').value,
-      studentIds: $$('.gSt').filter(c => c.checked).map(c => c.value), note: $('#gNote').value.trim()
+      studentIds: picked, joined: joined, note: $('#gNote').value.trim()
     };
     if (isNew) { DB.groups.push(Object.assign({ id: 'g' + uid(), archived: false }, data)); save(); closeModal(); render(); toast('Сохранено'); return; }
     const changed = data.perStudent !== g.perStudent ||
-      data.studentIds.join(',') !== (g.studentIds || []).join(',');
-    freezeAllOf('group', g.id);          // прошедшие занятия сохраняют старую цену и старый состав
+      data.studentIds.join(',') !== (g.studentIds || []).join(',') ||
+      JSON.stringify(data.joined) !== JSON.stringify(g.joined || {});
+    // сначала применяем даты вступления, чтобы прошлые занятия заморозились
+    // с тем составом, который реально занимался, и уже потом правим состав и цену
+    g.joined = data.joined;
+    freezeAllOf('group', g.id);
     Object.assign(g, data);
     const n = changed ? resyncSlotPrices('group', g.id) : 0;
     save(); closeModal(); render();
@@ -2372,15 +2554,18 @@ const BANKS = [
   { name: 'Открытый банк заданий ОГЭ (ФИПИ)', url: 'https://oge.fipi.ru/bank/', note: 'Официальные задания ОГЭ по всем предметам' }
 ];
 
+/* Список соцсетей по умолчанию. Дальше он живёт в базе (DB.social)
+   и редактируется во вкладке «Материалы». */
 const SOCIAL = [
   { name: 'Telegram', url: 'https://t.me/fizVysotin', icon: '✈️' },
   { name: 'ВКонтакте', url: 'https://vk.com/fizvysotin', icon: '🅥' },
   { name: 'YouTube', url: 'https://youtube.com/@fizvysotin', icon: '▶️' },
-  { name: 'RuTube', url: 'https://rutube.ru/channel/79660977', icon: '📺' },
   { name: 'TikTok', url: 'https://tiktok.com/@fizvysotin', icon: '🎵' },
   { name: 'Instagram', url: 'https://instagram.com/fizvysotin', icon: '📷' },
   { name: 'Threads', url: 'https://www.threads.com/@fizvysotin', icon: '🧵' }
 ];
+/* Иконки на выбор при добавлении соцсети */
+const SOC_ICONS = ['✈️', '🅥', '▶️', '🎵', '📷', '🧵', '📺', '🌐', '💬', '📌', '🎥', '📘', '🐦', '💼', '📝', '🔗'];
 
 /* ---------- работа с хранилищем ---------- */
 // Supabase не принимает кириллицу и часть символов в имени объекта,
@@ -2519,14 +2704,31 @@ function viewMaterials() {
 
   <div class="card">
     <div class="card-head"><div><div class="card-title">Мои соцсети</div>
-      <div class="card-sub">Ссылки под рукой — удобно скинуть ученику или родителю</div></div></div>
-    <div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">
-      ${SOCIAL.map(s => `<a class="soc" href="${s.url}" target="_blank" rel="noopener">
-        <span class="soc-ic">${s.icon}</span>
-        <span><b>${esc(s.name)}</b><br><span class="muted small">${esc(s.url.replace(/^https?:\/\//, ''))}</span></span>
-      </a>`).join('')}
-    </div>
+      <div class="card-sub">Видны и вам, и ученикам в их кабинете</div></div>
+      <button class="btn btn-sm btn-primary" id="addSoc">+ Добавить</button></div>
+    ${socialList().length ? `<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">
+      ${socialList().map(s => `<div class="soc soc-edit">
+        <a class="soc-go" href="${esc(s.url)}" target="_blank" rel="noopener">
+          <span class="soc-ic">${esc(s.icon || '🔗')}</span>
+          <span><b>${esc(s.name)}</b><br><span class="muted small">${esc(s.url.replace(/^https?:\/\//, ''))}</span></span>
+        </a>
+        <span class="soc-acts">
+          <button class="btn btn-sm btn-ghost" data-sedit="${s.id}" title="Изменить">✎</button>
+          <button class="btn btn-sm btn-ghost" data-sdel="${s.id}" title="Удалить">✕</button>
+        </span>
+      </div>`).join('')}
+    </div>` : '<div class="empty small">Пока ни одной ссылки — нажмите «Добавить»</div>'}
   </div>`;
+
+  $('#addSoc').onclick = () => socialModal(null);
+  $$('[data-sedit]').forEach(b => b.onclick = () => socialModal(socialList().find(s => s.id === b.dataset.sedit)));
+  $$('[data-sdel]').forEach(b => b.onclick = () => {
+    const s = socialList().find(x => x.id === b.dataset.sdel);
+    confirmBox('Убрать «' + s.name + '» из соцсетей? Ученики её больше не увидят.', () => {
+      DB.social = socialList().filter(x => x.id !== s.id);
+      save(); pushPupils(true); render(true); toast('Убрано');
+    });
+  });
 
   $('#addLink').onclick = () => linkModal(null);
   $$('[data-ledit]').forEach(b => b.onclick = () => linkModal((DB.links || []).find(l => l.id === b.dataset.ledit)));
@@ -2611,6 +2813,45 @@ async function loadFiles() {
 }
 
 /** Добавить или изменить свою ссылку */
+/** Текущий список соцсетей: из базы, а если её ещё нет — встроенный */
+function socialList() { return (DB.social && DB.social.length) ? DB.social : []; }
+
+function socialModal(s) {
+  const isNew = !s;
+  const icon = s ? (s.icon || '🔗') : '🌐';
+  openModal(`
+    <div class="modal-head"><h3>${isNew ? 'Новая соцсеть' : 'Соцсеть'}</h3><button class="close-x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Название</label>
+        <input type="text" id="scName" value="${s ? esc(s.name) : ''}" placeholder="Например, Telegram"></div>
+      <div class="field"><label>Адрес</label>
+        <input type="text" id="scUrl" value="${s ? esc(s.url) : ''}" placeholder="t.me/fizVysotin"></div>
+      <div class="field"><label>Значок</label>
+        <input type="hidden" id="scIcon" value="${esc(icon)}">
+        <div class="icon-pick" id="scPick">${SOC_ICONS.map(x =>
+      `<button type="button" class="icon-opt ${x === icon ? 'on' : ''}" data-ic="${x}">${x}</button>`).join('')}</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>Отмена</button>
+      <button class="btn btn-primary" id="scSave">Сохранить</button></div>`);
+  $$('#scPick .icon-opt').forEach(b => b.onclick = () => {
+    $('#scIcon').value = b.dataset.ic;
+    $$('#scPick .icon-opt').forEach(x => x.classList.toggle('on', x === b));
+  });
+  $('#scSave').onclick = () => {
+    const name = $('#scName').value.trim();
+    let url = $('#scUrl').value.trim();
+    if (!name || !url) { toast('Нужны название и адрес'); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    const data = { name: name, url: url, icon: $('#scIcon').value || '🔗' };
+    if (!Array.isArray(DB.social)) DB.social = [];
+    if (isNew) DB.social.push(Object.assign({ id: 's' + uid() }, data));
+    else Object.assign(s, data);
+    save(); pushPupils(true); closeModal(); render(true); toast('Сохранено');
+  };
+}
+
 function linkModal(l) {
   const isNew = !l;
   openModal(`
@@ -2640,6 +2881,16 @@ function linkModal(l) {
    УСПЕВАЕМОСТЬ: домашние задания, контрольные и пробники
    ========================================================= */
 const WORK_TYPES = ['Пробник', 'Контрольная', 'Самостоятельная', 'Тест'];
+/* Готовые заготовки: только количество заданий, баллы потом настраиваются
+   кнопкой «Применить» или сохраняются своим шаблоном */
+const WORK_TPL = [
+  { name: 'ЕГЭ физика — 26 заданий', n: 26 },
+  { name: 'ОГЭ физика — 25 заданий', n: 25 },
+  { name: 'ЕГЭ математика (профиль) — 19 заданий', n: 19 },
+  { name: 'ОГЭ математика — 25 заданий', n: 25 },
+  { name: 'Короткая работа — 10 заданий', n: 10 },
+  { name: 'Короткая работа — 5 заданий', n: 5 }
+];
 let progStudent = 'all';
 
 const hwList = () => (DB.hw || []);
@@ -2906,20 +3157,33 @@ function workModal(w) {
       </div>
 
       <div class="card" style="background:var(--surface-2);box-shadow:none;margin:14px 0">
-        <div class="card-title" style="margin-bottom:8px">Разбор по заданиям</div>
-        <div class="row" style="align-items:flex-end">
-          <div class="field" style="max-width:130px"><label>Сколько заданий</label>
-            <input type="number" id="wN" min="1" max="60" value="${draft.tasks.length}"></div>
-          <div class="field" style="max-width:150px"><label>Баллы за задание</label>
-            <input type="number" id="wPts" min="1" max="10" value="1"></div>
-          <div class="field" style="max-width:110px"><label>с №</label><input type="number" id="wFrom" min="1" value="1"></div>
-          <div class="field" style="max-width:110px"><label>по №</label><input type="number" id="wTo" min="1" value="${draft.tasks.length}"></div>
-          <div class="field" style="max-width:130px"><label>&nbsp;</label>
-            <button class="btn btn-sm" id="wApply" type="button">Применить</button></div>
+        <div class="card-head" style="margin-bottom:8px">
+          <div><div class="card-title">Разбор по заданиям</div>
+            <div class="card-sub">Нажмите на нужный балл — или введите с клавиатуры</div></div>
+          <select id="wTpl" style="max-width:260px">
+            <option value="">Шаблон работы…</option>
+            ${WORK_TPL.map((x, i) => `<option value="b${i}">${esc(x.name)}</option>`).join('')}
+            ${(DB.wtpl || []).map(x => `<option value="${esc(x.id)}">${esc(x.name)} · свой</option>`).join('')}
+          </select>
         </div>
-        <div class="muted small" style="margin-bottom:10px">Клик по заданию добавляет балл: пусто → 1 → … → максимум → снова пусто.
-          Для второй части поставьте, например, «2 балла с 21 по 26» и нажмите «Применить».</div>
-        <div class="tasks" id="wTasks"></div>
+
+        <details class="tk-setup">
+          <summary>Сколько заданий и баллов за каждое</summary>
+          <div class="row" style="align-items:flex-end;margin-top:8px">
+            <div class="field" style="max-width:130px"><label>Всего заданий</label>
+              <input type="number" id="wN" min="1" max="60" value="${draft.tasks.length}"></div>
+            <div class="field" style="max-width:120px"><label>с №</label><input type="number" id="wFrom" min="1" value="1"></div>
+            <div class="field" style="max-width:120px"><label>по №</label><input type="number" id="wTo" min="1" value="${draft.tasks.length}"></div>
+            <div class="field" style="max-width:140px"><label>баллов за каждое</label>
+              <input type="number" id="wPts" min="1" max="10" value="1"></div>
+            <div class="field" style="max-width:130px"><label>&nbsp;</label>
+              <button class="btn btn-sm" id="wApply" type="button">Применить</button></div>
+          </div>
+          <div class="muted small">Например, «со 2 по 26 по 2 балла» — и нажмите «Применить».
+            <button class="btn btn-sm btn-ghost" id="wTplSave" type="button">Сохранить как свой шаблон</button></div>
+        </details>
+
+        <div class="tks" id="wTasks"></div>
         <div class="small" style="margin-top:10px" id="wSum"></div>
       </div>
 
@@ -2929,18 +3193,92 @@ function workModal(w) {
     <div class="modal-foot"><button class="btn" data-close>Отмена</button>
       <button class="btn btn-primary" id="wSave">Сохранить</button></div>`);
 
+  let focusIdx = 0;
+  const cls = t => !t.got ? 'z' : (t.got >= t.max ? 'f' : 'p');
+
   const drawTasks = () => {
-    $('#wTasks').innerHTML = draft.tasks.map((t, i) =>
-      `<button type="button" class="task ${!t.got ? 'z' : (t.got >= t.max ? 'f' : 'p')}" data-t="${i}">
-         <span class="task-n">${i + 1}</span><span class="task-p">${t.got}/${t.max}</span></button>`).join('');
+    $('#wTasks').innerHTML = draft.tasks.map((t, i) => {
+      const max = Math.max(1, +t.max || 1);
+      // до 5 баллов — кнопки на каждый балл, дальше поле для ввода
+      const body = max <= 5
+        ? `<span class="tk-chips">${Array.from({ length: max + 1 }, (_, v) =>
+          `<button type="button" class="tk-chip ${t.got === v ? 'on' : ''}" data-t="${i}" data-v="${v}" tabindex="-1">${v}</button>`).join('')}</span>`
+        : `<span class="tk-chips"><input type="number" class="tk-inp" data-t="${i}" min="0" max="${max}" value="${t.got || 0}" tabindex="-1"><span class="tk-of">из ${max}</span></span>`;
+      return `<div class="tk ${cls(t)}" data-tk="${i}" tabindex="0">
+        <span class="tk-n">№${i + 1}<span class="tk-max">из ${max}</span></span>${body}</div>`;
+    }).join('');
+
     const p = workPrimary(draft), m = workMax(draft);
-    $('#wSum').innerHTML = 'Первичный балл: <b>' + p + '</b> из ' + m + ' · ' + (m ? Math.round(p / m * 100) : 0) + '%';
-    $$('#wTasks .task').forEach(b => b.onclick = () => {
-      const t = draft.tasks[+b.dataset.t];
-      t.got = t.got >= t.max ? 0 : t.got + 1;
-      drawTasks();
+    const full = draft.tasks.filter(t => t.got >= t.max).length;
+    $('#wSum').innerHTML = 'Первичный балл: <b>' + p + '</b> из ' + m + ' · ' + (m ? Math.round(p / m * 100) : 0) + '%'
+      + ' · решено полностью ' + full + ' из ' + draft.tasks.length;
+
+    $$('#wTasks .tk-chip').forEach(b => b.onclick = ev => {
+      ev.preventDefault();
+      setGot(+b.dataset.t, +b.dataset.v);
+    });
+    $$('#wTasks .tk-inp').forEach(inp => {
+      inp.oninput = () => {
+        const i = +inp.dataset.t, t = draft.tasks[i];
+        t.got = clamp(+inp.value || 0, 0, t.max);
+        const tile = inp.closest('.tk');
+        tile.className = 'tk ' + cls(t);
+        refreshSum();
+      };
+      inp.onclick = ev => ev.stopPropagation();
+    });
+    $$('#wTasks .tk').forEach(el => {
+      el.onclick = () => { focusIdx = +el.dataset.tk; };
+      el.onfocus = () => { focusIdx = +el.dataset.tk; };
+      el.onkeydown = onKey;
     });
   };
+
+  const refreshSum = () => {
+    const p = workPrimary(draft), m = workMax(draft);
+    const full = draft.tasks.filter(t => t.got >= t.max).length;
+    $('#wSum').innerHTML = 'Первичный балл: <b>' + p + '</b> из ' + m + ' · ' + (m ? Math.round(p / m * 100) : 0) + '%'
+      + ' · решено полностью ' + full + ' из ' + draft.tasks.length;
+  };
+
+  /** Поставить балл и обновить только эту плитку */
+  const setGot = (i, v) => {
+    const t = draft.tasks[i];
+    t.got = clamp(v, 0, t.max);
+    const tile = $('#wTasks .tk[data-tk="' + i + '"]');
+    if (!tile) return;
+    tile.className = 'tk ' + cls(t);
+    $$('.tk-chip', tile).forEach(c => c.classList.toggle('on', +c.dataset.v === t.got));
+    const inp = $('.tk-inp', tile); if (inp) inp.value = t.got;
+    refreshSum();
+  };
+
+  const focusTile = i => {
+    const n = draft.tasks.length;
+    focusIdx = ((i % n) + n) % n;
+    const el = $('#wTasks .tk[data-tk="' + focusIdx + '"]');
+    if (el) el.focus();
+  };
+
+  /** Клавиатура: цифра ставит балл и переходит к следующему, стрелки двигают */
+  function onKey(e) {
+    const i = +e.currentTarget.dataset.tk;
+    const t = draft.tasks[i];
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      const v = +e.key;
+      if (v > t.max) return;
+      setGot(i, v);
+      if (i < draft.tasks.length - 1) focusTile(i + 1);
+      return;
+    }
+    if (e.key === 'ArrowRight') { e.preventDefault(); focusTile(i + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); focusTile(i - 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setGot(i, t.got + 1); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setGot(i, t.got - 1); }
+    else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setGot(i, t.got >= t.max ? 0 : t.max); }
+    else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); setGot(i, 0); if (i > 0) focusTile(i - 1); }
+  }
   const syncScale = () => {
     draft.exam = $('#wExam').value;
     draft.scale = draft.exam === 'ЕГЭ' ? 100 : 5;
@@ -2957,12 +3295,40 @@ function workModal(w) {
     $('#wTo').value = n;
     drawTasks();
   };
+  $('#wTpl').onchange = e => {
+    const v = e.target.value;
+    e.target.value = '';
+    if (!v) return;
+    let tasks = null;
+    if (/^b\d+$/.test(v)) tasks = newTasks(WORK_TPL[+v.slice(1)].n, 1);
+    else { const t = (DB.wtpl || []).find(x => x.id === v); if (t) tasks = t.tasks.map(x => ({ max: x.max, got: 0 })); }
+    if (!tasks) return;
+    const old = draft.tasks;
+    draft.tasks = tasks.map((t, i) => ({ max: t.max, got: old[i] ? Math.min(old[i].got, t.max) : 0 }));
+    $('#wN').value = draft.tasks.length;
+    $('#wTo').value = draft.tasks.length;
+    drawTasks();
+    toast('Структура подставлена');
+  };
+  $('#wTplSave').onclick = () => {
+    const name = (prompt('Название шаблона', $('#wTitle').value.trim() || 'Мой пробник') || '').trim();
+    if (!name) return;
+    if (!DB.wtpl) DB.wtpl = [];
+    DB.wtpl.push({ id: 'wt' + uid(), name: name, tasks: draft.tasks.map(t => ({ max: t.max })) });
+    save();
+    const sel = $('#wTpl');
+    const o = document.createElement('option');
+    o.value = DB.wtpl[DB.wtpl.length - 1].id; o.textContent = name + ' · свой';
+    sel.appendChild(o);
+    toast('Шаблон сохранён');
+  };
   $('#wApply').onclick = () => {
     const from = clamp(+$('#wFrom').value || 1, 1, draft.tasks.length);
     const to = clamp(+$('#wTo').value || draft.tasks.length, from, draft.tasks.length);
     const pts = clamp(+$('#wPts').value || 1, 1, 10);
     for (let i = from - 1; i < to; i++) { draft.tasks[i].max = pts; draft.tasks[i].got = Math.min(draft.tasks[i].got, pts); }
     drawTasks();
+    toast('Задания ' + from + '–' + to + ' — по ' + pts + ' ' + plural(pts, 'баллу', 'балла', 'баллов'));
   };
   $('#wAuto').onclick = () => { draft.grade = suggestGrade(draft); $('#wGrade').value = draft.grade; };
 
@@ -3106,38 +3472,78 @@ const programs = () => (DB.programs || []);
 const programOf = id => programs().find(p => p.id === id);
 const realTopics = p => (p ? p.topics.filter(t => !isSection(t.t)) : []);
 
-/** Программа ученика: явно выбранная или подходящая по предмету и цели */
-function studentProgram(s) {
-  if (s.programId) { const p = programOf(s.programId); if (p) return p; }
-  const subj = (s.subjects || [])[0] || 'Ф';
+/** Предметы ученика: по которым он занимается (минимум один) */
+function subjectsOf(s) {
+  const list = (s.subjects || []).filter(x => x === 'Ф' || x === 'М');
+  return list.length ? list : ['Ф'];
+}
+/** Явно выбранные программы по предметам: { 'Ф': id, 'М': id } */
+function progMap(s) { if (!s.programIds) s.programIds = {}; return s.programIds; }
+
+/** Программа ученика по предмету: выбранная вручную или подходящая по цели */
+function programFor(s, subj) {
+  const pick = progMap(s)[subj];
+  if (pick) { const p = programOf(pick); if (p) return p; }
+  if (pick === null) return null;            // снята вручную
   const exam = s.goal === 'ОГЭ' ? 'ОГЭ' : (s.goal === 'ЕГЭ' ? 'ЕГЭ' : null);
   if (!exam) return null;
   return programs().find(p => p.exam === exam && p.subject === subj) || null;
+}
+/** Все программы ученика — по одной на предмет */
+function studentPrograms(s) {
+  return subjectsOf(s).map(x => ({ subject: x, program: programFor(s, x) })).filter(x => x.program);
+}
+/** Первая программа — для мест, где предмет не важен */
+function studentProgram(s) {
+  const list = studentPrograms(s);
+  return list.length ? list[0].program : null;
+}
+/** Суммарный прогресс по всем предметам */
+function progressAll(s) {
+  let total = 0, done = 0;
+  studentPrograms(s).forEach(x => { total += realTopics(x.program).length; done += doneCount(s, x.program); });
+  return { total: total, done: done, pct: total ? Math.round(done / total * 100) : 0 };
 }
 function doneMap(s) { if (!s.topics) s.topics = {}; return s.topics; }
 function doneCount(s, p) { const d = doneMap(s); return realTopics(p).filter(t => d[t.id]).length; }
 
 let topicsOpen = false;
+let topicSubj = {};    // какой предмет открыт в панели тем, по каждому ученику
 
 const dateText = v => (typeof v === 'string' && /^\d{4}-/.test(v)) ? fmtDate(parseKey(v)) : '';
 
+/** Какой предмет сейчас показываем в панели тем */
+function panelSubj(s) {
+  const subs = subjectsOf(s);
+  const cur = topicSubj[s.id];
+  return subs.indexOf(cur) >= 0 ? cur : subs[0];
+}
+
 /** Панель со списком тем ученика (сворачиваемая) */
 function topicsPanel(s) {
-  const p = studentProgram(s);
   if (!programs().length) return '<div class="empty small">Программы ещё не настроены</div>';
-  const sel = `<select id="tpProgram" data-sid="${s.id}" style="max-width:230px">
+  const subs = subjectsOf(s);
+  const subj = panelSubj(s);
+  const p = programFor(s, subj);
+  const all = progressAll(s);
+
+  const tabs = subs.length > 1
+    ? `<div class="subj-tabs">${subs.map(x => { const px = programFor(s, x);
+      const dn = px ? doneCount(s, px) : 0, tt = px ? realTopics(px).length : 0;
+      return `<button type="button" class="subj-tab ${x === subj ? 'on' : ''}" data-tsubj="${x}" data-sid="${s.id}">
+          ${esc(subjLabel(x))}<span class="subj-cnt">${tt ? dn + '/' + tt : '—'}</span></button>`; }).join('')}</div>`
+    : '';
+
+  const sel = `<select id="tpProgram" data-sid="${s.id}" data-subj="${subj}" style="max-width:230px">
       <option value="">— программа не выбрана —</option>
-      ${programs().map(x => `<option value="${x.id}" ${p && x.id === p.id ? 'selected' : ''}>${esc(x.name)} · ${realTopics(x).length} тем</option>`).join('')}
+      ${programs().filter(x => x.subject === subj).map(x =>
+      `<option value="${x.id}" ${p && x.id === p.id ? 'selected' : ''}>${esc(x.name)} · ${realTopics(x).length} тем</option>`).join('')}
     </select>`;
 
   const d = doneMap(s);
-  const total = p ? realTopics(p).length : 0;
-  const done = p ? doneCount(s, p) : 0;
-  const pct = total ? Math.round(done / total * 100) : 0;
-
   let body;
   if (!p) {
-    body = `<div style="margin-bottom:10px">${sel}</div>
+    body = `${tabs}<div style="margin-bottom:10px">${sel}</div>
       <div class="empty small">Выберите программу — появится список тем</div>`;
   } else {
     let n = 0;
@@ -3152,7 +3558,7 @@ function topicsPanel(s) {
         <span class="topic-d">${on ? `<span class="date-chip" data-dfor="${t.id}" data-sid="${s.id}" title="Изменить дату">${esc(dateText(d[t.id]) || 'дата')}</span>` : ''}</span>
       </label>`;
     }).join('');
-    body = `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+    body = `${tabs}<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
         ${sel}<span class="muted small">Дату можно изменить — нажмите на неё</span>
       </div>
       <div class="topics">${rows}</div>`;
@@ -3161,8 +3567,8 @@ function topicsPanel(s) {
   return `<details class="topics-box" ${topicsOpen ? 'open' : ''}>
     <summary>
       <span class="tb-title">Пройденные темы</span>
-      <span class="tb-sum" data-tp-sum>${p ? done + ' из ' + total + ' · ' + pct + '%' : 'программа не выбрана'}</span>
-      <span class="tb-bar"><i data-tp-bar style="width:${pct}%"></i></span>
+      <span class="tb-sum" data-tp-sum>${all.total ? all.done + ' из ' + all.total + ' · ' + all.pct + '%' : 'программа не выбрана'}</span>
+      <span class="tb-bar"><i data-tp-bar style="width:${all.pct}%"></i></span>
       <span class="tb-hint">развернуть</span>
     </summary>
     <div class="topics-body">${body}</div>
@@ -3171,13 +3577,16 @@ function topicsPanel(s) {
 
 /** Точечно обновить счётчик и полосу прогресса — без перерисовки списка */
 function updateTopicsProgress(s) {
-  const p = studentProgram(s); if (!p) return;
-  const total = realTopics(p).length, done = doneCount(s, p);
-  const pct = total ? Math.round(done / total * 100) : 0;
+  const all = progressAll(s);
+  if (!all.total) return;
   const sum = document.querySelector('[data-tp-sum]');
   const bar = document.querySelector('[data-tp-bar]');
-  if (sum) sum.textContent = done + ' из ' + total + ' · ' + pct + '%';
-  if (bar) bar.style.width = pct + '%';
+  if (sum) sum.textContent = all.done + ' из ' + all.total + ' · ' + all.pct + '%';
+  if (bar) bar.style.width = all.pct + '%';
+  // счётчик на вкладке предмета
+  const subj = panelSubj(s), p = programFor(s, subj);
+  const tab = document.querySelector('.subj-tab[data-tsubj="' + subj + '"][data-sid="' + s.id + '"] .subj-cnt');
+  if (tab && p) tab.textContent = doneCount(s, p) + '/' + realTopics(p).length;
 }
 
 /** Клик по дате — редактор даты прямо в строке */
@@ -3239,10 +3648,17 @@ function wireTopics(after) {
 
   $$('.date-chip').forEach(bindDateChip);
 
+  $$('[data-tsubj]').forEach(b => b.onclick = ev => {
+    ev.preventDefault();
+    topicSubj[b.dataset.sid] = b.dataset.tsubj;
+    topicsOpen = true;
+    if (after) after(); else render(true);
+  });
+
   const sel = $('#tpProgram');
   if (sel) sel.onchange = () => {
     const s = student(sel.dataset.sid); if (!s) return;
-    s.programId = sel.value || null;
+    progMap(s)[sel.dataset.subj] = sel.value || null;
     topicsOpen = true;
     save();
     if (after) after(); else render(true);
@@ -3276,7 +3692,11 @@ function wireProgramsCard() {
     const p = programOf(b.dataset.pdel);
     confirmBox('Удалить программу «' + p.name + '»? Отметки о пройденных темах у учеников пропадут.', () => {
       DB.programs = programs().filter(x => x.id !== p.id);
-      DB.students.forEach(s => { if (s.programId === p.id) s.programId = null; });
+      DB.students.forEach(s => {
+        if (s.programId === p.id) s.programId = null;
+        const m = s.programIds || {};
+        Object.keys(m).forEach(k => { if (m[k] === p.id) delete m[k]; });
+      });
       save(); render(true); toast('Программа удалена');
     });
   });
@@ -3367,25 +3787,24 @@ function pupilLessons(s) {
   const gs = groupsOf(s.id);
   const gid = {}; gs.forEach(g => gid[g.id] = g.name);
   return occurrences(from, to)
-    .filter(o => (o.kind === 'group' ? gid[o.refId] != null : o.refId === s.id))
+    .filter(o => (o.kind === 'group' ? (gid[o.refId] != null && inOcc(o, s.id)) : o.refId === s.id))
     .map(o => ({
       d: o.date, t: o.time, dur: o.dur || 60,
-      subj: o.subject || '', st: o.st || 'plan',
+      subj: o.subject || '', st: stOf(o, s.id) || 'plan',
       pd: o.payMap && o.payMap[s.id] ? 1 : 0,   // только факт оплаты, без сумм
       g: o.kind === 'group' ? (gid[o.refId] || '') : ''
     }));
 }
 
-/** Данные одного ученика. Ничего лишнего сюда попасть не должно. */
-function pupilPayload(s) {
+/** Срез по одному ребёнку: расписание, задания, работы, темы */
+function childSlice(s) {
   const p = studentProgram(s);
   return {
-    v: 1,
+    id: s.id,
     name: s.name,
     grade: s.grade || null,
     goal: s.goal || '',
     subjects: s.subjects || [],
-    tutor: DB.settings.owner || '',
     lessons: pupilLessons(s),
     hw: (DB.hw || []).filter(h => h.studentId === s.id).map(h => ({
       id: h.id, date: h.date || null, due: h.due || null, text: h.text || '',
@@ -3398,10 +3817,34 @@ function pupilPayload(s) {
       note: w.note || ''
     })),
     program: p ? { name: p.name, topics: p.topics.map(t => ({ id: t.id, t: t.t })) } : null,
-    topics: s.topics || {},
+    programs: studentPrograms(s).map(x => ({
+      subject: x.subject, name: x.program.name,
+      topics: x.program.topics.map(t => ({ id: t.id, t: t.t }))
+    })),
+    topics: s.topics || {}
+  };
+}
+
+/** Кто ещё виден в этом кабинете: братья и сёстры на одном доступе */
+function kidsOf(s) {
+  const a = accessOf(s);
+  const extra = (a && Array.isArray(a.kids) ? a.kids : [])
+    .filter(id => id !== s.id).map(id => student(id)).filter(Boolean);
+  return [s].concat(extra);
+}
+
+/** Данные кабинета. Ничего лишнего сюда попасть не должно. */
+function pupilPayload(s) {
+  const kids = kidsOf(s);
+  const main = childSlice(s);
+  return Object.assign({}, main, {
+    v: 2,
+    tutor: DB.settings.owner || '',
+    kids: kids.map(childSlice),
+    social: socialList().map(x => ({ name: x.name, url: x.url, icon: x.icon })),
     files: (DB.files || []).map(f => ({ k: f.k, n: f.n, s: f.s, d: f.d })),
     links: (DB.links || []).map(l => ({ name: l.name, url: l.url, note: l.note || '' }))
-  };
+  });
 }
 
 /** Выгрузить срезы всех учеников, у которых есть доступ (только изменившиеся) */
@@ -3491,14 +3934,27 @@ function memoText(s, login, pass) {
 
 function accessModal(s) {
   const a = accessOf(s);
+  const others = activeStudents().filter(x => x.id !== s.id);
+  const kids = (a && Array.isArray(a.kids)) ? a.kids : [];
+  const family = a && others.length
+    ? `<div class="card" style="background:var(--surface-2);box-shadow:none;margin-top:14px">
+         <div class="card-title">Братья и сёстры в этом же кабинете</div>
+         <div class="muted small" style="margin:3px 0 9px">Удобно, когда у двоих детей один родитель: он заходит одним логином
+           и переключается между детьми. Отмеченные здесь ученики появятся в этом кабинете.</div>
+         <div class="checks">${others.map(x => `<label class="chk ${kids.indexOf(x.id) >= 0 ? 'on' : ''}">
+           <input type="checkbox" class="acKid" value="${x.id}" ${kids.indexOf(x.id) >= 0 ? 'checked' : ''}> ${esc(x.name)}</label>`).join('')}</div>
+       </div>`
+    : '';
   const body = a
     ? `<div class="ac-box">
          <div><span class="muted small">Логин</span><div class="ac-val" id="acLogin">${esc(a.login)}</div></div>
          <div class="muted small" style="margin-top:8px">Доступ выдан ${esc(dateText(a.at) || a.at || '')}. Пароль показывается только в момент выдачи — если он потерян, выпустите новый.</div>
        </div>
-       <div class="muted small" style="margin-top:12px">Адрес кабинета: <a href="${esc(pupilUrl())}" target="_blank" rel="noopener">${esc(pupilUrl())}</a></div>`
+       <div class="muted small" style="margin-top:12px">Адрес кабинета: <a href="${esc(pupilUrl())}" target="_blank" rel="noopener">${esc(pupilUrl())}</a></div>
+       ${family}`
     : `<div class="muted">У ученика пока нет доступа. Кабинет открывается только на просмотр: расписание и посещаемость, домашние задания с оценками, контрольные и пробники, пройденные темы, файлы с формулами.
-       <br><br>Стоимость занятий, оплаты, долги и данные других учеников туда не передаются.</div>`;
+       <br><br>Стоимость занятий, оплаты, долги и данные других учеников туда не передаются.
+       <br><br>Если у родителя двое детей, выдайте доступ одному — после этого здесь можно будет добавить второго в тот же кабинет.</div>`;
 
   openModal(`<div class="modal-head"><h3>Доступ ученика · ${esc(s.name)}</h3></div>
     <div class="modal-body" id="acBody">${body}</div>
@@ -3538,6 +3994,19 @@ function accessModal(s) {
       $('#acBody').insertAdjacentHTML('afterbegin', '<div class="err-box">' + esc(e.message || 'Ошибка') + '</div>');
     }
   };
+
+  $$('.acKid').forEach(c => c.onchange = async e => {
+    e.target.closest('.chk').classList.toggle('on', e.target.checked);
+    const acc = accessOf(s); if (!acc) return;
+    acc.kids = $$('.acKid').filter(x => x.checked).map(x => x.value);
+    if (!acc.kids.length) delete acc.kids;
+    save();
+    delete pupilCache[s.id];
+    await pushPupils();
+    toast(e.target.checked
+      ? (student(e.target.value) || {}).name + ' теперь виден в этом кабинете'
+      : (student(e.target.value) || {}).name + ' убран из кабинета');
+  });
 
   if ($('#acGrant')) $('#acGrant').onclick = e => issue(e.target);
   if ($('#acNew')) $('#acNew').onclick = e => issue(e.target);
@@ -3630,7 +4099,7 @@ function viewMoney() {
         <td class="nowrap muted">${esc(x.o.time)}</td>
         <td>${subjBadge(x.o.subject)}</td>
         <td><b>${esc((student(x.id) || {}).name || 'Ученик')}</b>${x.o.kind === 'group' ? ' <span class="badge badge-g">' + esc(targetName(x.o.kind, x.o.refId)) + '</span>' : ''}</td>
-        <td><span class="badge ${STATUS[x.o.st].cls}">${STATUS[x.o.st].icon} ${STATUS[x.o.st].label}</span></td>
+        <td><span class="badge ${STATUS[stOf(x.o, x.id)].cls}">${STATUS[stOf(x.o, x.id)].icon} ${STATUS[stOf(x.o, x.id)].label}</span></td>
         <td class="num nowrap">${money(shareOf(x.o, x.id))}</td>
         <td><button class="pay-btn" data-pay1="${esc(x.o.id)}" data-sid="${esc(x.id)}">₽ оплачено</button></td>
       </tr>`).join('') : '<tr><td class="muted">Долгов нет — красота 🎉</td></tr>'}
