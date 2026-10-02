@@ -255,17 +255,61 @@ a{color:var(--brand)}
 .lblock .card-title{font-size:13px}
 .chk.lTopic{align-items:flex-start;text-align:left;line-height:1.35}
 
-/* слабые места по заданиям */
-.weak{display:flex;flex-direction:column;gap:9px}
-.weak-row{display:flex;align-items:center;gap:11px}
-.weak-n{font-weight:750;font-size:13px;min-width:38px;font-variant-numeric:tabular-nums}
-.weak-bar{height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden}
-.weak-bar i{display:block;height:100%;border-radius:999px;background:var(--st-good)}
-.weak-bar i.warn{background:var(--st-warn)}
-.weak-bar i.crit{background:var(--st-crit)}
-.weak-pct{min-width:46px;text-align:right;font-variant-numeric:tabular-nums;color:var(--st-good)}
-.weak-pct.warn{color:var(--st-warn)}
-.weak-pct.crit{color:var(--st-crit)}
+/* заходы в кабинет */
+.seenlist{display:flex;flex-direction:column;gap:6px}
+.seen-row{display:flex;align-items:center;gap:10px;padding:7px 9px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);background:var(--surface)}
+.seen-row.warm{border-color:var(--st-warn)}
+.seen-row.cold{border-color:var(--st-crit);background:var(--st-crit-bg)}
+.seen-when{font-size:12.5px;font-weight:650;color:var(--ink-2);white-space:nowrap}
+.seen-row.cold .seen-when{color:var(--st-crit)}
+.avatar.sm{width:30px;height:30px;font-size:11px;flex-shrink:0}
+
+/* главная в кабинете ученика */
+.hmlist{display:flex;flex-direction:column;gap:8px}
+.hm{display:flex;align-items:flex-start;gap:11px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);background:var(--surface-2)}
+.hm.late{border-color:var(--st-crit);background:var(--st-crit-bg)}
+.hm-due{font-size:11.5px;font-weight:700;color:var(--ink-2);min-width:54px;padding-top:1px}
+.hm.late .hm-due{color:var(--st-crit)}
+.hm-text{font-weight:600;line-height:1.35}
+
+/* экран «Сегодня» */
+.tdlist{display:flex;flex-direction:column;gap:11px}
+.tdc{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);
+  border-radius:var(--radius);padding:13px 14px;box-shadow:var(--shadow)}
+.tdc.s-done{border-left-color:var(--st-good)}
+.tdc.s-miss{border-left-color:var(--st-crit)}
+.tdc.s-move{border-left-color:var(--st-warn)}
+.tdc.s-cancel{border-left-color:var(--muted);opacity:.72}
+.tdc-top{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.tdc-time{font-size:20px;font-weight:750;font-variant-numeric:tabular-nums;min-width:62px}
+.tdc-who{flex:1;min-width:0}
+.tdc-name{font-weight:700;font-size:15px}
+.tdc-price{font-weight:700;white-space:nowrap}
+.tdc-st{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tdc-st button{
+  font:inherit;font-size:12px;font-weight:650;cursor:pointer;padding:10px 4px;line-height:1.2;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink-2);
+}
+.tdc-st button:hover{border-color:var(--brand)}
+.tdc-st button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.tdc-pay{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.tdc-chip{
+  font:inherit;font-size:12.5px;font-weight:650;cursor:pointer;padding:9px 13px;
+  border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);
+}
+.tdc-chip.wide{width:100%}
+.tdc-chip:hover{border-color:var(--brand)}
+.tdc-chip.on{background:var(--st-good);border-color:var(--st-good);color:#fff}
+.tdc-chip.skip{opacity:.55;text-decoration:line-through;cursor:default}
+.tdc-close{width:100%;margin-top:10px}
+@media (max-width:620px){
+  .tdc-st{grid-template-columns:repeat(2,1fr)}
+  .tdc-st button{padding:12px 4px;font-size:13px}
+  .tdc-chip{padding:11px 14px;font-size:13.5px}
+  .tdc-time{font-size:22px}
+}
 
 /* свободные окна */
 .freegrid{display:flex;flex-direction:column;gap:5px}
@@ -316,6 +360,9 @@ a{color:var(--brand)}
 .rep-tbl td{padding:6px 8px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
 .rep-foot{margin-top:18px;padding-top:10px;border-top:1px solid var(--line);
   font-size:11px;color:var(--muted)}
+.rbar{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding:8px 10px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2)}
+.rbar-mid{flex:1;text-align:center;min-width:0}
 
 @media print{
   body>*{display:none!important}
@@ -722,7 +769,8 @@ body.auth-mode .nav,body.auth-mode #app,body.auth-mode .banner{display:none}
 <nav class="nav">
   <div class="wrap nav-inner">
     <div class="tabs-row" id="tabs">
-      <button class="tab active" data-view="week"><span class="ic">🗓</span>Расписание</button>
+      <button class="tab active" data-view="home"><span class="ic">🏠</span>Главная</button>
+      <button class="tab" data-view="week"><span class="ic">🗓</span>Расписание</button>
       <button class="tab" data-view="prog"><span class="ic">📈</span>Успеваемость</button>
       <button class="tab" data-view="topics"><span class="ic">✅</span>Пройденные темы</button>
       <button class="tab" data-view="mat"><span class="ic">📚</span>Материалы</button>
@@ -769,6 +817,7 @@ const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const firstName = name => String(name || '').trim().split(/\s+/)[0] || '—';
 const plural = (n, a, b, c) => {
   n = Math.abs(n) % 100; const n1 = n % 10;
   if (n > 10 && n < 20) return c; if (n1 > 1 && n1 < 5) return b; if (n1 === 1) return a; return c;
@@ -1034,7 +1083,7 @@ async function api(path, opts, retry) {
    ========================================================= */
 
 let P = null;                 // срез данных ученика
-let PVIEW = 'week';
+let PVIEW = 'home';
 let pAnchor = startOfWeek(new Date());
 let pMonth = todayKey().slice(0, 7);
 
@@ -1052,6 +1101,96 @@ const hwList = () => K().hw || [];
 const workList = () => K().works || [];
 const socialOf = () => (P && P.social && P.social.length) ? P.social : SOCIAL;
 let topicTab = 0;    // какой предмет открыт на вкладке «Пройденные темы»
+
+/* ---------- главная ---------- */
+
+function viewHome() {
+  const k = K();
+  const tk = todayKey();
+  const ls = lessons();
+  const next = ls.filter(l => l.d >= tk && l.st !== 'cancel' && l.st !== 'move')
+    .sort((a, b) => a.d.localeCompare(b.d) || a.t.localeCompare(b.t))[0];
+  const hw = hwList();
+  const todo = hw.filter(h => !h.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+  const lastHw = hw.filter(h => h.grade).slice(-1)[0];
+  const works = workList().slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const lastWork = works[works.length - 1];
+
+  // прогресс по программам
+  const progs = (k.programs && k.programs.length) ? k.programs
+    : (k.program ? [{ subject: '', name: k.program.name, topics: k.program.topics }] : []);
+  const done = k.topics || {};
+  const pg = progs.map(x => {
+    const real = x.topics.filter(t => !/^#/.test(t.t));
+    const c = real.filter(t => done[t.id]).length;
+    return { name: SUBJ[x.subject] || x.name, done: c, total: real.length,
+      pct: real.length ? Math.round(c / real.length * 100) : 0 };
+  });
+
+  // до экзамена
+  let exam = null;
+  if (k.examAt && /^\d{4}-/.test(k.examAt)) {
+    const dd = Math.ceil((parseKey(k.examAt) - parseKey(tk)) / 86400000);
+    exam = { days: dd, date: k.examAt };
+  }
+
+  const dayWord = n => plural(n, 'день', 'дня', 'дней');
+  const overdue = h => h.due && h.due < tk;
+
+  $('#app').innerHTML = `
+  <div class="page-head">
+    <div><h2>Привет, ${esc(firstName(k.name || ''))}!</h2>
+      <div class="sub">${next ? 'Следующее занятие — ' + (next.d === tk ? 'сегодня' : fmtShort(next.d)) + ' в ' + esc(next.t)
+      : 'Ближайших занятий пока нет'}</div></div>
+  </div>
+
+  <div class="grid cols-${exam ? '4' : '3'}" style="margin-bottom:14px">
+    ${exam ? `<div class="stat hero"><div class="label">До экзамена</div>
+      <div class="value">${exam.days > 0 ? exam.days : 0}<small> ${dayWord(Math.max(0, exam.days))}</small></div>
+      <div class="delta">${exam.days > 0 ? fmtShort(exam.date) : 'экзамен уже позади'}</div></div>` : ''}
+    <div class="stat"><div class="label">Задано</div><div class="value">${todo.length}</div>
+      <div class="delta ${todo.filter(overdue).length ? 'down' : ''}">${todo.filter(overdue).length ? 'просрочено ' + todo.filter(overdue).length : 'без просрочек'}</div></div>
+    <div class="stat"><div class="label">Последняя оценка</div>
+      <div class="value">${lastHw ? lastHw.grade : '—'}</div>
+      <div class="delta">${lastHw ? 'за домашку' : 'оценок пока нет'}</div></div>
+    <div class="stat"><div class="label">Последняя работа</div>
+      <div class="value">${lastWork && lastWork.grade != null ? lastWork.grade : '—'}</div>
+      <div class="delta">${lastWork ? esc(lastWork.title || lastWork.type || '') : 'работ пока нет'}</div></div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Что задано</div>
+        <div class="card-sub">${todo.length ? 'Ближайшее — сверху' : 'Всё сделано'}</div></div></div>
+      ${todo.length ? `<div class="hmlist">${todo.slice(0, 6).map(h => `
+        <div class="hm ${overdue(h) ? 'late' : ''}">
+          <div class="hm-due">${h.due ? fmtShort(h.due) : 'без срока'}</div>
+          <div class="grow"><div class="hm-text">${esc(h.text)}</div>
+            <div class="muted small">${overdue(h) ? 'срок прошёл' : (h.due ? 'осталось ' + Math.max(0, Math.ceil((parseKey(h.due) - parseKey(tk)) / 86400000)) + ' ' + dayWord(Math.max(0, Math.ceil((parseKey(h.due) - parseKey(tk)) / 86400000))) : '')}</div></div>
+          ${h.grade ? '<span class="badge ' + (h.grade >= 4 ? 'badge-good' : (h.grade <= 2 ? 'badge-crit' : 'badge-warn')) + '">' + h.grade + '</span>' : ''}
+        </div>`).join('')}</div>`
+      : '<div class="empty">Ничего не задано — можно выдохнуть 🙂</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Программа</div>
+        <div class="card-sub">Сколько тем пройдено</div></div></div>
+      ${pg.length ? pg.map(x => `
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:5px">
+            <b>${esc(x.name)}</b><span class="muted small">${x.done} из ${x.total} · ${x.pct}%</span>
+          </div>
+          <div class="tb-bar"><i style="width:${x.pct}%"></i></div>
+        </div>`).join('')
+      : '<div class="empty">Программа пока не назначена</div>'}
+      ${next ? `<div class="list-line" style="margin-top:4px">
+        <div class="grow"><span class="muted small">Следующее занятие</span><br>
+          <b>${next.d === tk ? 'Сегодня' : fmtShort(next.d)} в ${esc(next.t)}</b>
+          <span class="muted small">· ${esc(next.g || 'индивидуально')}</span></div>
+        ${subjTag(next.subj)}</div>` : ''}
+    </div>
+  </div>`;
+}
 
 /* ---------- расписание ---------- */
 
@@ -1343,10 +1482,10 @@ async function downloadFile(btn, k) {
 
 /* ---------- каркас ---------- */
 
-const PVIEWS = { week: viewWeek, prog: viewProg, topics: viewTopics, mat: viewMat };
+const PVIEWS = { home: viewHome, week: viewWeek, prog: viewProg, topics: viewTopics, mat: viewMat };
 
 function render() {
-  (PVIEWS[PVIEW] || viewWeek)();
+  (PVIEWS[PVIEW] || viewHome)();
   $$('#tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.view === PVIEW));
 }
 
@@ -1408,6 +1547,18 @@ function showAuth(msg) {
   };
 }
 
+/** Отметить, что кабинет открыли. Если в базе нет такой колонки — просто ничего не делаем. */
+async function touchSeen() {
+  try {
+    if (!AUTH.uid()) return;
+    await api('/rest/v1/pupil?uid=eq.' + encodeURIComponent(AUTH.uid()), {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ seen_at: new Date().toISOString() })
+    });
+  } catch (e) { /* не критично */ }
+}
+
 async function loadPupil() {
   const badge = $('#syncBadge');
   badge.style.display = 'inline-flex'; badge.className = 'sync sync-wait'; badge.textContent = 'Загружаю…';
@@ -1434,6 +1585,9 @@ async function loadPupil() {
     const r2 = await api('/rest/v1/pupil?select=tutor', { method: 'GET' });
     if (r2.ok) { const pr = await r2.json(); if (pr[0]) P.owner = pr[0].tutor; }
   } catch (e) { }
+
+  // отмечаем заход — чтобы репетитор видел, кто давно не открывал кабинет
+  touchSeen();
 
   badge.style.display = 'none';
   drawKidSwitch();
