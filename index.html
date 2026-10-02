@@ -255,17 +255,61 @@ a{color:var(--brand)}
 .lblock .card-title{font-size:13px}
 .chk.lTopic{align-items:flex-start;text-align:left;line-height:1.35}
 
-/* слабые места по заданиям */
-.weak{display:flex;flex-direction:column;gap:9px}
-.weak-row{display:flex;align-items:center;gap:11px}
-.weak-n{font-weight:750;font-size:13px;min-width:38px;font-variant-numeric:tabular-nums}
-.weak-bar{height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden}
-.weak-bar i{display:block;height:100%;border-radius:999px;background:var(--st-good)}
-.weak-bar i.warn{background:var(--st-warn)}
-.weak-bar i.crit{background:var(--st-crit)}
-.weak-pct{min-width:46px;text-align:right;font-variant-numeric:tabular-nums;color:var(--st-good)}
-.weak-pct.warn{color:var(--st-warn)}
-.weak-pct.crit{color:var(--st-crit)}
+/* заходы в кабинет */
+.seenlist{display:flex;flex-direction:column;gap:6px}
+.seen-row{display:flex;align-items:center;gap:10px;padding:7px 9px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);background:var(--surface)}
+.seen-row.warm{border-color:var(--st-warn)}
+.seen-row.cold{border-color:var(--st-crit);background:var(--st-crit-bg)}
+.seen-when{font-size:12.5px;font-weight:650;color:var(--ink-2);white-space:nowrap}
+.seen-row.cold .seen-when{color:var(--st-crit)}
+.avatar.sm{width:30px;height:30px;font-size:11px;flex-shrink:0}
+
+/* главная в кабинете ученика */
+.hmlist{display:flex;flex-direction:column;gap:8px}
+.hm{display:flex;align-items:flex-start;gap:11px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:var(--radius-sm);background:var(--surface-2)}
+.hm.late{border-color:var(--st-crit);background:var(--st-crit-bg)}
+.hm-due{font-size:11.5px;font-weight:700;color:var(--ink-2);min-width:54px;padding-top:1px}
+.hm.late .hm-due{color:var(--st-crit)}
+.hm-text{font-weight:600;line-height:1.35}
+
+/* экран «Сегодня» */
+.tdlist{display:flex;flex-direction:column;gap:11px}
+.tdc{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);
+  border-radius:var(--radius);padding:13px 14px;box-shadow:var(--shadow)}
+.tdc.s-done{border-left-color:var(--st-good)}
+.tdc.s-miss{border-left-color:var(--st-crit)}
+.tdc.s-move{border-left-color:var(--st-warn)}
+.tdc.s-cancel{border-left-color:var(--muted);opacity:.72}
+.tdc-top{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.tdc-time{font-size:20px;font-weight:750;font-variant-numeric:tabular-nums;min-width:62px}
+.tdc-who{flex:1;min-width:0}
+.tdc-name{font-weight:700;font-size:15px}
+.tdc-price{font-weight:700;white-space:nowrap}
+.tdc-st{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tdc-st button{
+  font:inherit;font-size:12px;font-weight:650;cursor:pointer;padding:10px 4px;line-height:1.2;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink-2);
+}
+.tdc-st button:hover{border-color:var(--brand)}
+.tdc-st button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.tdc-pay{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.tdc-chip{
+  font:inherit;font-size:12.5px;font-weight:650;cursor:pointer;padding:9px 13px;
+  border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);
+}
+.tdc-chip.wide{width:100%}
+.tdc-chip:hover{border-color:var(--brand)}
+.tdc-chip.on{background:var(--st-good);border-color:var(--st-good);color:#fff}
+.tdc-chip.skip{opacity:.55;text-decoration:line-through;cursor:default}
+.tdc-close{width:100%;margin-top:10px}
+@media (max-width:620px){
+  .tdc-st{grid-template-columns:repeat(2,1fr)}
+  .tdc-st button{padding:12px 4px;font-size:13px}
+  .tdc-chip{padding:11px 14px;font-size:13.5px}
+  .tdc-time{font-size:22px}
+}
 
 /* свободные окна */
 .freegrid{display:flex;flex-direction:column;gap:5px}
@@ -316,6 +360,9 @@ a{color:var(--brand)}
 .rep-tbl td{padding:6px 8px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
 .rep-foot{margin-top:18px;padding-top:10px;border-top:1px solid var(--line);
   font-size:11px;color:var(--muted)}
+.rbar{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding:8px 10px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2)}
+.rbar-mid{flex:1;text-align:center;min-width:0}
 
 @media print{
   body>*{display:none!important}
@@ -772,6 +819,7 @@ const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const firstName = name => String(name || '').trim().split(/\s+/)[0] || '—';
 const plural = (n, a, b, c) => {
   n = Math.abs(n) % 100; const n1 = n % 10;
   if (n > 10 && n < 20) return c; if (n1 > 1 && n1 < 5) return b; if (n1 === 1) return a; return c;
@@ -798,7 +846,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
    ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
    ========================================================= */
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '3.7 · 2 октября 2026, 01:00';
+const APP_VERSION = '3.8 · 2 октября 2026, 14:00';
 const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
 const moneyShort = n => {
   n = Math.round(n || 0);
@@ -900,7 +948,6 @@ const avatarColor = name => {
   let h = 0; for (let i = 0; i < String(name).length; i++) h = (h * 31 + name.charCodeAt(i)) % 9973;
   return hues[h % hues.length];
 };
-const firstName = name => String(name || '').trim().split(/\s+/)[0] || '—';
 const initials = name => String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
 /* ---------- периодичность постоянных занятий ---------- */
@@ -1075,7 +1122,8 @@ function occurrences(fromKey, toKey) {
     out.push(buildOcc({
       id: e.id, slotId: null, date: e.date, time: e.time, dur: e.dur || 60,
       kind: e.kind, refId: e.refId, subject: e.subject, price: e.price,
-      members: e.members || null   // состав на момент заморозки, если он был сохранён
+      members: e.members || null,  // состав на момент заморозки, если он был сохранён
+      movedFrom: e.movedFrom || null
     }));
   });
   out.sort((a, b) => a.date === b.date ? minutesOf(a.time) - minutesOf(b.time) : (a.date < b.date ? -1 : 1));
@@ -1243,6 +1291,7 @@ function setMark(id, patch) {
   if (!next.pay || !Object.keys(next.pay).length) delete next.pay;
   if (!next.disc || !Object.keys(next.disc).length) delete next.disc;
   if (!next.sst || !Object.keys(next.sst).length) delete next.sst;
+  if (!next.movedTo) delete next.movedTo;
   if (!next.note) delete next.note;
   if (Object.keys(next).length === 0) delete DB.marks[id]; else DB.marks[id] = next;
   save();
@@ -1932,6 +1981,7 @@ function lessonCard(o) {
       <span class="lsn-time">${esc(o.time)}</span>
       ${subjBadge(o.subject)}
       <span class="lsn-name" title="${esc(targetName(o.kind, o.refId))}">${esc(targetName(o.kind, o.refId))}</span>
+      ${o.movedFrom ? '<span class="badge" title="Перенесено с ' + esc(fmtDate(parseKey(o.movedFrom))) + '">⟳</span>' : ''}
       <span class="muted small nowrap">${esc(targetGrade(o.kind, o.refId))}</span>
       <span class="lsn-price">${money(o.price)}</span>
     </div>
@@ -2053,8 +2103,10 @@ function viewWeek() {
       if (act === 'st') {
         const s = b.dataset.s;
         const next = o.st === s ? 'plan' : s;
-        // перенос и отмена не оплачиваются — снимаем галочку оплаты, чтобы не путала
-        setMark(id, (next === 'move' || next === 'cancel') ? { st: next, paid: false } : { st: next });
+        if (next === 'move') { moveModal(o); return; }
+        if (o.st === 'move' && dropMovedTo(id)) toast('Перенесённое занятие убрано');
+        // отмена не оплачивается — снимаем галочку оплаты, чтобы не путала
+        setMark(id, next === 'cancel' ? { st: next, paid: false } : { st: next });
         render();
       } else if (act === 'pay') {
         setMark(id, { paid: !o.paid });
@@ -2070,6 +2122,76 @@ function viewWeek() {
       }
     });
   });
+}
+
+/* ---------- перенос занятия на другую дату ---------- */
+
+/** Поставить перенос и создать занятие на новой дате */
+function moveLesson(o, date, time) {
+  dropMovedTo(o.id);                    // если переносили раньше — убираем прошлую копию
+  setMark(o.id, { st: 'move', paid: false, pay: null });
+  if (!date) { save(); return null; }
+  if (!DB.extra) DB.extra = [];
+  const nid = 'x' + uid();
+  DB.extra.push({
+    id: nid, date: date, time: time || o.time, dur: o.dur || 60,
+    kind: o.kind, refId: o.refId, subject: o.subject,
+    price: o.listPrice,
+    members: o.roster && o.roster.length ? o.roster.slice() : null,
+    movedFrom: o.date, fromSlot: o.slotId || null
+  });
+  setMark(o.id, { movedTo: nid });
+  save();
+  return nid;
+}
+
+/** Убрать занятие, созданное переносом, если его ещё не трогали */
+function dropMovedTo(srcId) {
+  const m = DB.marks[srcId];
+  const nid = m && m.movedTo;
+  if (!nid) return false;
+  const touched = !!DB.marks[nid];
+  if (!touched) DB.extra = (DB.extra || []).filter(e => e.id !== nid);
+  const cur = Object.assign({}, m); delete cur.movedTo;
+  DB.marks[srcId] = Object.keys(cur).length ? cur : undefined;
+  if (!DB.marks[srcId]) delete DB.marks[srcId];
+  return !touched;
+}
+
+/** Небольшое окно «перенести на…» */
+function moveModal(o, after) {
+  const d = parseKey(o.date);
+  openModal(`
+    <div class="modal-head"><h3>Перенести занятие</h3><button class="close-x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="muted small" style="margin-bottom:10px">${esc(targetName(o.kind, o.refId))} ·
+        ${DAYS_FULL[wdIdx(d)].toLowerCase()}, ${fmtDate(d)}, ${esc(o.time)}</div>
+      <div class="row">
+        <div class="field"><label>На какую дату</label>
+          <input type="date" id="mvDate" value="${esc(key(addDays(d, 1)))}"></div>
+        <div class="field"><label>Во сколько</label>
+          <input type="time" id="mvTime" value="${esc(o.time)}"></div>
+      </div>
+      <div class="muted small">Занятие встанет на новую дату вместе со стоимостью. Старое останется в расписании со статусом «Перенос» и начисляться не будет.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="mvNone">Дата пока неизвестна</button>
+      <button class="btn btn-primary" id="mvGo">Перенести</button>
+    </div>`);
+  $('#mvGo').onclick = () => {
+    const date = $('#mvDate').value;
+    if (!date) { toast('Укажите дату'); return; }
+    moveLesson(o, date, $('#mvTime').value);
+    closeModal(); render(true);
+    toast('Перенесено на ' + fmtDate(parseKey(date)));
+    if (after) after();
+  };
+  $('#mvNone').onclick = () => {
+    moveLesson(o, null);
+    closeModal(); render(true);
+    toast('Отмечено как перенос');
+    if (after) after();
+  };
 }
 
 /* ---------- свободные окна в расписании ---------- */
@@ -2183,6 +2305,12 @@ function lessonModal(o) {
       </div>
       <div class="field"><label>Статус</label>
         <select id="lSt">${Object.keys(STATUS).map(s => `<option value="${s}" ${o.st === s ? 'selected' : ''}>${STATUS[s].icon} ${STATUS[s].label}</option>`).join('')}</select></div>
+      ${o.movedFrom ? `<div class="muted small" style="margin:-4px 0 10px">⟳ Перенесено с ${esc(fmtDateFull(parseKey(o.movedFrom)))}</div>` : ''}
+      <div class="row ${o.st === 'move' ? '' : 'hidden'}" id="lMoveWrap" style="margin-bottom:4px">
+        <div class="field"><label>Перенесли на дату</label><input type="date" id="lMvDate" value=""></div>
+        <div class="field"><label>Во сколько</label><input type="time" id="lMvTime" value="${esc(o.time)}"></div>
+        <div class="field" style="flex:1 1 100%;margin-top:-6px"><span class="hint">Заполните — и занятие само встанет на новую дату. Оставьте пустым, если дата ещё не известна.</span></div>
+      </div>
       <div class="${o.st === 'move' || o.st === 'cancel' ? 'hidden' : ''}" id="lPaidWrap">
         ${o.kind === 'group'
           ? `<label>Ученики · ${money(o.perOne)} с человека</label>
@@ -2273,6 +2401,7 @@ function lessonModal(o) {
     const free = e.target.value === 'move' || e.target.value === 'cancel';
     $('#lPaidWrap').classList.toggle('hidden', free);
     $('#lNoPay').classList.toggle('hidden', !free);
+    $('#lMoveWrap').classList.toggle('hidden', e.target.value !== 'move');
     if (free) {
       if ($('#lPaid')) { $('#lPaid').checked = false; $('#lPaidOne').classList.remove('on'); }
       $$('.lPay1').forEach(c => { c.checked = false; c.closest('.chk').classList.remove('on'); });
@@ -2319,7 +2448,15 @@ function lessonModal(o) {
     } else {
       patch.paid = $('#lPaid') ? $('#lPaid').checked : false;
     }
-    setMark(o.id, patch);
+    // перенос с указанной датой: создаём занятие на новом месте
+    let movedTo = '';
+    if (patch.st === 'move' && $('#lMvDate') && $('#lMvDate').value) {
+      movedTo = $('#lMvDate').value;
+      moveLesson(o, movedTo, $('#lMvTime').value);
+    } else {
+      if (o.st === 'move' && patch.st !== 'move') dropMovedTo(o.id);
+      setMark(o.id, patch);
+    }
 
     // пройденные темы — всем участникам, кто идёт по этой программе
     let nTop = 0;
@@ -2351,6 +2488,7 @@ function lessonModal(o) {
 
     save(); closeModal(); render(true);
     const parts = [];
+    if (movedTo) parts.push('перенесено на ' + fmtDate(parseKey(movedTo)));
     if (nTop) parts.push('тем отмечено: ' + nTop);
     if (nHw) parts.push('домашка выдана: ' + nHw);
     toast(parts.length ? 'Занятие закрыто · ' + parts.join(' · ') : 'Сохранено');
@@ -2436,6 +2574,101 @@ function slotModal(s, wd, fromDate) {
     }
     save(); closeModal(); render(true);
     toast(saved ? 'Расписание обновлено · прошлое сохранено (' + saved + ')' : 'Расписание обновлено');
+  };
+}
+
+/* =========================================================
+   ЭКРАН «СЕГОДНЯ»
+   Крупные кнопки, чтобы отмечать занятия с телефона на бегу.
+   ========================================================= */
+function viewToday() {
+  const tk = todayKey();
+  const d = new Date();
+  const occ = occurrences(tk, tk);
+  const t = totals(occ);
+  const left = occ.filter(o => o.st === 'plan').length;
+
+  const card = o => {
+    const who = targetName(o.kind, o.refId);
+    const free = SKIPPED.indexOf(o.st) >= 0;
+    return `<div class="tdc s-${o.st}" data-oid="${esc(o.id)}">
+      <div class="tdc-top">
+        <span class="tdc-time">${esc(o.time)}</span>
+        <div class="tdc-who">
+          <div class="tdc-name">${esc(who)}${o.movedFrom ? ' <span class="badge" title="Перенос с ' + esc(fmtDate(parseKey(o.movedFrom))) + '">⟳</span>' : ''}</div>
+          <div class="muted small">${subjLabel(o.subject)} · ${o.dur || 60} мин${o.kind === 'group' ? ' · ' + o.roster.length + ' ' + plural(o.roster.length, 'ученик', 'ученика', 'учеников') : ''}</div>
+        </div>
+        <span class="tdc-price">${money(o.price)}</span>
+      </div>
+
+      <div class="tdc-st">
+        ${['done', 'miss', 'move', 'cancel'].map(x =>
+      `<button class="${o.st === x ? 'on' : ''}" data-act="st" data-s="${x}">${STATUS[x].icon} ${STATUS[x].label}</button>`).join('')}
+      </div>
+
+      ${free ? '<div class="muted small" style="margin-top:8px">Не оплачивается</div>' : `
+      <div class="tdc-pay">
+        ${o.kind === 'group'
+        ? (o.roster || []).map(id => { const st = student(id); if (!st) return '';
+          const cur = stOf(o, id);
+          if (SKIPPED.indexOf(cur) >= 0) return `<span class="tdc-chip skip">${STATUS[cur].icon} ${esc(firstName(st.name))}</span>`;
+          return `<button class="tdc-chip ${o.payMap[id] ? 'on' : ''}" data-act="pay1" data-sid="${id}">${esc(firstName(st.name))} · ${o.payMap[id] ? 'оплатил' : money(shareOf(o, id))}</button>`;
+        }).join('')
+        : `<button class="tdc-chip wide ${o.paid ? 'on' : ''}" data-act="pay">${o.paid ? '✓ Оплачено' : '₽ Отметить оплату'}</button>`}
+      </div>`}
+
+      <button class="btn btn-sm tdc-close" data-act="more">Закрыть занятие — темы, домашка, заметка</button>
+    </div>`;
+  };
+
+  $('#app').innerHTML = `
+  <div class="page-head">
+    <div><h2>Сегодня</h2><div class="sub">${DAYS_FULL[wdIdx(d)]}, ${fmtDateFull(d)}</div></div>
+    <button class="btn btn-sm" data-go="week">Вся неделя</button>
+  </div>
+
+  <div class="grid cols-3" style="margin-bottom:14px">
+    <div class="stat"><div class="label">Занятий</div><div class="value">${occ.length}</div>
+      <div class="delta">${left ? 'не отмечено ' + left : 'все отмечены'}</div></div>
+    <div class="stat"><div class="label">Начислено</div><div class="value">${moneyShort(t.charged)}<small> ₽</small></div>
+      <div class="delta">${Math.round(t.minutes / 60 * 10) / 10} ч</div></div>
+    <div class="stat"><div class="label">Получено</div><div class="value">${moneyShort(t.received)}<small> ₽</small></div>
+      <div class="delta ${t.debt ? 'down' : 'up'}">${t.debt ? 'ждём ' + money(t.debt) : 'всё оплачено'}</div></div>
+  </div>
+
+  ${occ.length ? `<div class="tdlist">${occ.map(card).join('')}</div>
+    ${left ? '<button class="btn btn-primary" id="tdAll" style="margin-top:12px;width:100%">✓ Отметить все как проведённые</button>' : ''}`
+      : '<div class="card"><div class="empty">Сегодня занятий нет — можно выдохнуть 🙂</div></div>'}`;
+
+  $$('.tdc').forEach(el => {
+    const id = el.dataset.oid;
+    el.addEventListener('click', ev => {
+      const b = ev.target.closest('button'); if (!b) return;
+      const act = b.dataset.act;
+      const o = occ.find(x => x.id === id); if (!o) return;
+      if (act === 'st') {
+        const next = o.st === b.dataset.s ? 'plan' : b.dataset.s;
+        if (next === 'move') { moveModal(o); return; }
+        if (o.st === 'move' && dropMovedTo(id)) toast('Перенесённое занятие убрано');
+        setMark(id, next === 'cancel' ? { st: next, paid: false } : { st: next });
+        render(true);
+      } else if (act === 'pay') {
+        setMark(id, { paid: !o.paid });
+        if (!o.paid) toast('Оплата отмечена: ' + money(o.price));
+        render(true);
+      } else if (act === 'pay1') {
+        const sid = b.dataset.sid, was = !!o.payMap[sid];
+        setPaid(o, sid, !was);
+        if (!was) toast(firstName((student(sid) || {}).name) + ' — оплата ' + money(shareOf(o, sid)));
+        render(true);
+      } else if (act === 'more') {
+        lessonModal(o);
+      }
+    });
+  });
+  if ($('#tdAll')) $('#tdAll').onclick = () => {
+    occ.forEach(o => { if (o.st === 'plan') setMark(o.id, { st: 'done' }); });
+    toast('Все занятия отмечены'); render(true);
   };
 }
 /* =========================================================
@@ -2617,6 +2850,10 @@ function studentModal(s) {
         </div>
       </div>
       <div class="row">
+        <div class="field"><label>Дата экзамена</label><input type="date" id="nExam" value="${s && s.examAt ? esc(s.examAt) : ''}">
+          <span class="hint">Покажется ученику обратным отсчётом</span></div>
+      </div>
+      <div class="row">
         <div class="field"><label>Цена занятия, ₽</label><input type="number" id="nPrice" step="50" value="${s && s.price ? s.price : DB.settings.defaultPrice}"></div>
         <div class="field"><label>Цель</label>
           <select id="nGoal">${['ЕГЭ', 'ОГЭ', 'Школа', 'Олимпиады', 'Другое'].map(g => `<option ${s && s.goal === g ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
@@ -2638,6 +2875,7 @@ function studentModal(s) {
       name: name, grade: +$('#nGrade').value || null,
       subjects: $$('.nSubj').filter(c => c.checked).map(c => c.value),
       price: +$('#nPrice').value || 0, goal: $('#nGoal').value,
+      examAt: $('#nExam').value || null,
       note: $('#nNote').value.trim()
     };
     if (isNew) { DB.students.push(Object.assign({ id: 'u' + uid(), archived: false, created: todayKey() }, data)); save(); closeModal(); render(); toast('Ученик добавлен'); return; }
@@ -3165,86 +3403,6 @@ const gradeColor = w => {
   return good ? 'color:var(--st-good)' : (bad ? 'color:var(--st-crit)' : 'color:var(--st-warn)');
 };
 
-/* ---------- слабые места по заданиям ---------- */
-
-/** Сводка по номерам заданий: сколько раз решал и какой процент набрал */
-function weakSpots(works) {
-  const by = {};
-  works.forEach(w => (w.tasks || []).forEach((t, i) => {
-    const max = +t.max || 0;
-    if (!max) return;
-    const n = i + 1;
-    const r = by[n] || (by[n] = { n: n, tries: 0, got: 0, max: 0, full: 0, zero: 0, who: {} });
-    const got = +t.got || 0;
-    r.tries++; r.got += got; r.max += max;
-    if (got >= max) r.full++;
-    if (!got) { r.zero++; r.who[w.studentId] = (r.who[w.studentId] || 0) + 1; }
-  }));
-  return Object.keys(by).map(k => {
-    const r = by[k];
-    r.pct = r.max ? Math.round(r.got / r.max * 100) : 0;
-    return r;
-  }).sort((a, b) => a.n - b.n);
-}
-
-/** Какие задания стоит разобрать: решали хотя бы дважды и набрали меньше порога */
-function weakList(works, minTries, maxPct) {
-  return weakSpots(works)
-    .filter(r => r.tries >= (minTries || 2) && r.pct <= (maxPct || 60))
-    .sort((a, b) => a.pct - b.pct || b.tries - a.tries);
-}
-
-/** Карточка «Что разобрать» */
-function weakCard(works, forOne) {
-  const all = weakSpots(works);
-  if (!all.length) {
-    return `<div class="card">
-      <div class="card-head"><div><div class="card-title">Что разобрать</div>
-        <div class="card-sub">Появится, когда внесёте разбор хотя бы одной работы по заданиям</div></div></div>
-      <div class="empty small">Пока нет работ с разбором по номерам заданий</div></div>`;
-  }
-  const weak = weakList(works);
-  const solid = all.filter(r => r.tries >= 2 && r.pct >= 90).length;
-  const worst = weak.slice(0, 12);
-  const maxTries = Math.max.apply(null, all.map(r => r.tries));
-
-  return `<div class="card">
-    <div class="card-head"><div><div class="card-title">Что разобрать</div>
-      <div class="card-sub">${forOne ? 'Задания, которые стабильно не даются' : 'Задания, которые чаще всего проваливают'} · по ${works.length} ${plural(works.length, 'работе', 'работам', 'работам')}</div></div></div>
-
-    <div class="grid cols-3" style="margin-bottom:14px">
-      <div class="stat"><div class="label">Проседают</div><div class="value">${weak.length}</div><div class="delta">${plural(weak.length, 'задание', 'задания', 'заданий')} ниже 60%</div></div>
-      <div class="stat"><div class="label">Уверенно</div><div class="value">${solid}</div><div class="delta">${plural(solid, 'задание', 'задания', 'заданий')} от 90%</div></div>
-      <div class="stat"><div class="label">Разобрано заданий</div><div class="value">${all.length}</div><div class="delta">номеров встречалось в работах</div></div>
-    </div>
-
-    ${worst.length ? `<div class="weak">${worst.map(r => `
-      <div class="weak-row">
-        <span class="weak-n">№${r.n}</span>
-        <div class="grow">
-          <div class="weak-bar"><i class="${r.pct < 35 ? 'crit' : (r.pct < 60 ? 'warn' : '')}" style="width:${Math.max(2, r.pct)}%"></i></div>
-          <div class="muted small" style="margin-top:3px">решал ${r.tries} ${plural(r.tries, 'раз', 'раза', 'раз')} · полностью ${r.full} · ноль ${r.zero}${forOne ? '' : whoText(r)}</div>
-        </div>
-        <b class="weak-pct ${r.pct < 35 ? 'crit' : (r.pct < 60 ? 'warn' : '')}">${r.pct}%</b>
-      </div>`).join('')}</div>`
-      : '<div class="empty small">Проваленных заданий нет — всё выше 60% 👍</div>'}
-
-    <details style="margin-top:12px">
-      <summary class="muted small" style="cursor:pointer">Все задания по порядку</summary>
-      <div class="tasks-mini" style="margin-top:9px">${all.map(r =>
-      `<span class="tm ${r.pct >= 90 ? 'f' : (r.pct >= 60 ? 'p' : 'z')}" title="Задание ${r.n}: ${r.pct}% за ${r.tries} ${plural(r.tries, 'попытку', 'попытки', 'попыток')}">${r.n}</span>`).join('')}</div>
-      <div class="muted small" style="margin-top:6px">Зелёные — от 90%, жёлтые — от 60%, серые — ниже. Всего попыток по самому частому заданию: ${maxTries}.</div>
-    </details>
-  </div>`;
-}
-
-/** Кто именно заваливает это задание */
-function whoText(r) {
-  const names = Object.keys(r.who).sort((a, b) => r.who[b] - r.who[a]).slice(0, 3)
-    .map(id => firstName((student(id) || {}).name || '—'));
-  return names.length ? ' · чаще всего ' + names.join(', ') : '';
-}
-
 function studentOptions(sel, allLabel) {
   return (allLabel ? '<option value="all">' + allLabel + '</option>' : '')
     + activeStudents().sort((a, b) => a.name.localeCompare(b.name, 'ru'))
@@ -3274,6 +3432,7 @@ function viewProgress() {
       <select id="pStudent" style="min-width:180px">${studentOptions(progStudent, 'Все ученики')}</select>
       <button class="btn btn-primary btn-sm" id="addHw">+ Домашка</button>
       <button class="btn btn-sm" id="addWork">+ Работа</button>
+      <button class="btn btn-sm" id="allReports">📄 Отчёты за месяц</button>
     </div>
   </div>
 
@@ -3349,7 +3508,7 @@ function viewProgress() {
       : '<div class="empty small">Работ пока нет. Нажмите «+ Работа», чтобы внести пробник или контрольную.</div>'}
   </div>
 
-  ${weakCard(works, progStudent !== 'all')}
+  ${seenCard()}
 
   ${progStudent !== 'all' && student(progStudent)
       ? `<div class="card" id="progTopics">${topicsPanel(student(progStudent))}</div>`
@@ -3360,8 +3519,18 @@ function viewProgress() {
     const refresh = () => { const box = $('#progTopics'); if (box) { box.innerHTML = topicsPanel(student(progStudent)); wireTopics(refresh); } };
     wireTopics(refresh);
   }
+  if (pupilSeen === null) loadPupilSeen().then(() => { if (VIEW === 'prog') render(true); });
+  if ($('#seenReload')) $('#seenReload').onclick = () =>
+    loadPupilSeen(true).then(() => { toast('Обновлено'); render(true); });
+
   $('#addHw').onclick = () => hwModal(null);
   $('#addWork').onclick = () => workModal(null);
+  $('#allReports').onclick = () => {
+    const list = activeStudents().slice().sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    if (!list.length) { toast('Сначала добавьте учеников'); return; }
+    const first = (progStudent !== 'all' && student(progStudent)) ? student(progStudent) : list[0];
+    reportModal(first, dashMonth, list);
+  };
   $$('[data-hwdone]').forEach(b => b.onclick = () => {
     const h = hwList().find(x => x.id === b.dataset.hwdone);
     h.done = !h.done; h.doneAt = h.done ? todayKey() : null;
@@ -3757,9 +3926,13 @@ function reportData(s, mk) {
     works: works, prevWorks: prevWorks, progs: progs, from: from, to: to };
 }
 
-function reportModal(s, mk) {
+function reportModal(s, mk, list) {
   reportMonth = mk || reportMonth || todayKey().slice(0, 7);
+  // list — все ученики, по которым можно листать отчёты подряд
+  let idx = list ? Math.max(0, list.findIndex(x => x.id === s.id)) : -1;
+  const cur = () => (idx >= 0 && list) ? list[idx] : s;
   const draw = () => {
+    const s = cur();
     const r = reportData(s, reportMonth);
     const y = +reportMonth.slice(0, 4), m = +reportMonth.slice(5, 7);
     const lastW = r.works[r.works.length - 1];
@@ -3774,7 +3947,7 @@ function reportModal(s, mk) {
       <button class="close-x" data-close>×</button></div>
 
     <div class="modal-body">
-      <div class="no-print" style="display:flex;gap:7px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <div class="no-print" style="display:flex;gap:7px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
         <button class="btn btn-sm" id="rPrev">←</button>
         <b style="min-width:140px;text-align:center">${monthLabel(reportMonth)}</b>
         <button class="btn btn-sm" id="rNext">→</button>
@@ -3782,6 +3955,11 @@ function reportModal(s, mk) {
         <button class="btn btn-sm" id="rCopy">Скопировать текстом</button>
         <button class="btn btn-sm btn-primary" id="rPrint">Печать / PDF</button>
       </div>
+      ${idx >= 0 ? `<div class="no-print rbar">
+        <button class="btn btn-sm" id="rSPrev">← Предыдущий</button>
+        <span class="rbar-mid"><b>${esc(s.name)}</b><span class="muted small"> · ${idx + 1} из ${list.length}</span></span>
+        <button class="btn btn-sm" id="rSNext">Следующий →</button>
+      </div>` : ''}
 
       <div class="report" id="reportBody">
         <div class="rep-head">
@@ -3855,21 +4033,24 @@ function reportModal(s, mk) {
     <div class="modal-foot no-print"><button class="btn" data-close>Закрыть</button></div>`;
   };
 
+  const redraw = () => { openModal(draw()); wire(); };
   const wire = () => {
     $('#rPrev').onclick = () => {
       const y = +reportMonth.slice(0, 4), m = +reportMonth.slice(5, 7);
       reportMonth = key(new Date(y, m - 2, 1)).slice(0, 7);
-      openModal(draw()); wire();
+      redraw();
     };
     $('#rNext').onclick = () => {
       const y = +reportMonth.slice(0, 4), m = +reportMonth.slice(5, 7);
       reportMonth = key(new Date(y, m, 1)).slice(0, 7);
-      openModal(draw()); wire();
+      redraw();
     };
+    if ($('#rSPrev')) $('#rSPrev').onclick = () => { idx = (idx - 1 + list.length) % list.length; redraw(); };
+    if ($('#rSNext')) $('#rSNext').onclick = () => { idx = (idx + 1) % list.length; redraw(); };
     $('#rPrint').onclick = () => window.print();
     $('#rCopy').onclick = () => {
-      const t = reportText(s, reportMonth);
-      if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('Отчёт скопирован'), () => toast('Не удалось скопировать'));
+      const t = reportText(cur(), reportMonth);
+      if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('Отчёт «' + cur().name + '» скопирован'), () => toast('Не удалось скопировать'));
       else toast('Не удалось скопировать');
     };
   };
@@ -4392,6 +4573,7 @@ function childSlice(s) {
     name: s.name,
     grade: s.grade || null,
     goal: s.goal || '',
+    examAt: s.examAt || null,
     subjects: s.subjects || [],
     lessons: pupilLessons(s),
     hw: (DB.hw || []).filter(h => h.studentId === s.id).map(h => ({
@@ -4462,6 +4644,80 @@ async function pushPupils(force) {
   } catch (e) {
     rows.forEach(x => delete pupilCache[x.sid]);
   }
+}
+
+/* ---------- когда ученик последний раз заходил ---------- */
+
+let pupilSeen = null;        // { sid: ISO-дата } — null, пока не загружено
+let seenUnsupported = false; // в базе ещё нет колонки seen_at
+
+async function loadPupilSeen(force) {
+  if (!cloudOn() || !AUTH.s) { pupilSeen = {}; return; }
+  if (pupilSeen && !force) return;
+  try {
+    const r = await api('/rest/v1/pupil?select=sid,seen_at', { method: 'GET' });
+    if (!r.ok) { seenUnsupported = true; pupilSeen = {}; return; }
+    const rows = await r.json();
+    const out = {};
+    rows.forEach(x => { if (x.sid) out[x.sid] = x.seen_at || null; });
+    pupilSeen = out;
+    seenUnsupported = false;
+  } catch (e) { seenUnsupported = true; pupilSeen = {}; }
+}
+
+/** «сегодня» / «3 дня назад» / «ни разу» */
+function seenText(iso) {
+  if (!iso) return { text: 'ни разу', days: null };
+  const d = Math.floor((Date.now() - Date.parse(iso)) / 86400000);
+  if (isNaN(d)) return { text: 'ни разу', days: null };
+  if (d <= 0) return { text: 'сегодня', days: 0 };
+  if (d === 1) return { text: 'вчера', days: 1 };
+  return { text: d + ' ' + plural(d, 'день', 'дня', 'дней') + ' назад', days: d };
+}
+
+/** Карточка «Кто давно не заходил» для вкладки «Успеваемость» */
+function seenCard() {
+  const ids = Object.keys(accessMap()).filter(id => student(id) && !student(id).archived);
+  if (!ids.length) {
+    return `<div class="card">
+      <div class="card-head"><div><div class="card-title">Заходы в кабинет</div>
+        <div class="card-sub">Появится, когда выдадите ученикам доступ</div></div></div>
+      <div class="empty small">Пока никому не выдан доступ в личный кабинет</div></div>`;
+  }
+  if (pupilSeen === null) {
+    return `<div class="card"><div class="card-head"><div><div class="card-title">Заходы в кабинет</div></div></div>
+      <div class="empty small">Загружаю…</div></div>`;
+  }
+  if (seenUnsupported) {
+    return `<div class="card">
+      <div class="card-head"><div><div class="card-title">Заходы в кабинет</div>
+        <div class="card-sub">Возможность пока выключена</div></div></div>
+      <div class="muted small">Чтобы здесь показывалось, кто давно не открывал свой кабинет, нужна небольшая разовая правка в базе — она занимает минуту.</div></div>`;
+  }
+
+  const rows = ids.map(id => {
+    const inf = seenText(pupilSeen[id]);
+    return { s: student(id), iso: pupilSeen[id], text: inf.text, days: inf.days };
+  }).sort((a, b) => {
+    const A = a.days == null ? 1e9 : a.days, B = b.days == null ? 1e9 : b.days;
+    return B - A;
+  });
+  const cold = rows.filter(r => r.days == null || r.days >= 14).length;
+
+  return `<div class="card">
+    <div class="card-head"><div><div class="card-title">Заходы в кабинет</div>
+      <div class="card-sub">${cold ? cold + ' ' + plural(cold, 'ученик давно не заходил', 'ученика давно не заходили', 'учеников давно не заходили')
+      : 'Все заходили на этой неделе'}</div></div>
+      <button class="btn btn-sm btn-ghost" id="seenReload">Обновить</button></div>
+    <div class="seenlist">${rows.map(r => `
+      <div class="seen-row ${r.days == null || r.days >= 14 ? 'cold' : (r.days >= 7 ? 'warm' : '')}">
+        <div class="avatar sm" style="background:${avatarColor(r.s.name)}">${esc(initials(r.s.name))}</div>
+        <div class="grow"><b>${esc(r.s.name)}</b>
+          <div class="muted small">${r.s.grade ? r.s.grade + ' класс' : ''}</div></div>
+        <span class="seen-when">${esc(r.text)}</span>
+      </div>`).join('')}</div>
+    <div class="muted small" style="margin-top:9px">Отмечается момент, когда ученик или родитель открыл кабинет.</div>
+  </div>`;
 }
 
 /* ---------- выдача и отзыв доступа ---------- */
@@ -4939,7 +5195,7 @@ function clearMarks() {
 /* =========================================================
    РОУТЕР И ЗАПУСК
    ========================================================= */
-const VIEWS = { dash: viewDash, week: viewWeek, students: viewStudents, prog: viewProgress, money: viewMoney, mat: viewMaterials, settings: viewSettings };
+const VIEWS = { dash: viewDash, today: viewToday, week: viewWeek, students: viewStudents, prog: viewProgress, money: viewMoney, mat: viewMaterials, settings: viewSettings };
 
 let pendingRender = false;
 /** Пока пользователь печатает в поле — страницу не перерисовываем, иначе теряется фокус */
@@ -4991,7 +5247,7 @@ function init() {
 function wireUI() {
   $$('#tabs .tab').forEach(t => t.onclick = () => { VIEW = t.dataset.view; render(); });
   $('#btnTheme').onclick = () => { DB.settings.theme = DB.settings.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); render(); };
-  $('#btnToday').onclick = () => { weekAnchor = startOfWeek(new Date()); dashMonth = todayKey().slice(0, 7); VIEW = 'week'; render(); };
+  $('#btnToday').onclick = () => { weekAnchor = startOfWeek(new Date()); dashMonth = todayKey().slice(0, 7); VIEW = 'today'; render(); };
 
   $('#overlay').addEventListener('click', e => {
     if (e.target.id === 'overlay' || e.target.closest('[data-close]')) closeModal();
