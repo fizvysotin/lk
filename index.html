@@ -846,7 +846,7 @@ const hhmm = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + Strin
    ЛИЧНЫЙ КАБИНЕТ РЕПЕТИТОРА · данные и справочники
    ========================================================= */
 const LS_KEY = 'fiz_lk_v1';
-const APP_VERSION = '3.8 · 2 октября 2026, 14:00';
+const APP_VERSION = '3.9 · 22 октября 2026, 20:00';
 const money = n => (Math.round(n || 0)).toLocaleString('ru-RU') + ' ₽';
 const moneyShort = n => {
   n = Math.round(n || 0);
@@ -1405,6 +1405,13 @@ function authError(j) {
 }
 
 /** fetch с ключами и авто-обновлением токена */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* На нестабильной связи часть запросов не доходит. Обрыв соединения —
+   это не ответ сервера, поэтому такую попытку можно спокойно повторить. */
+const NET_TRIES = 3;
+const NET_PAUSE = [400, 1500];
+
 async function api(path, opts, retry) {
   opts = opts || {};
   if (AUTH.s && AUTH.s.expires_at && AUTH.s.expires_at - 60 < Math.floor(Date.now() / 1000) && !retry) {
@@ -1417,12 +1424,28 @@ async function api(path, opts, retry) {
   // raw — тело уходит как есть (файл), тип не навязываем.
   if (!opts.raw && opts.body != null && !h['Content-Type']) h['Content-Type'] = 'application/json';
   if (AUTH.s) h.Authorization = 'Bearer ' + AUTH.s.access_token;
-  const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h }));
-  if (r.status === 401 && !retry) {
-    try { await AUTH.refresh(); } catch (e) { return r; }
-    return api(path, opts, true);
+
+  const tries = opts.tries == null ? NET_TRIES : opts.tries;
+  let last = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h }));
+      if (r.status === 401 && !retry) {
+        try { await AUTH.refresh(); } catch (e) { return r; }
+        return api(path, opts, true);
+      }
+      // сервер перегружен — тоже имеет смысл повторить
+      if ((r.status === 502 || r.status === 503 || r.status === 504) && i < tries - 1) {
+        await sleep(NET_PAUSE[Math.min(i, NET_PAUSE.length - 1)]);
+        continue;
+      }
+      return r;
+    } catch (e) {
+      last = e;
+      if (i < tries - 1) await sleep(NET_PAUSE[Math.min(i, NET_PAUSE.length - 1)]);
+    }
   }
-  return r;
+  throw last || new Error('network');
 }
 
 /* ---------- синхронизация ---------- */
@@ -1431,6 +1454,8 @@ const SYNC = {
   status: 'idle',       // idle | saving | saved | offline | conflict
   dirty: false,
   timer: null,
+  fails: 0,             // сколько попыток сохранения подряд не прошло
+  watchTimer: null,     // сторож связи в офлайне
   busy: false,
 
   setStatus(s, text) {
@@ -1487,7 +1512,18 @@ const SYNC = {
       if (!r.ok) throw new Error('save failed ' + r.status);
       const rows = await r.json();
       if (!rows.length) {
-        // кто-то (другое устройство) уже сохранил новую версию
+        // Строка не обновилась. Либо правда сохранили с другого устройства,
+        // либо наш же повтор после обрыва уже прошёл — это не конфликт.
+        const mine = await this.pull().catch(() => null);
+        if (mine && mine.rev === this.rev + 1 && JSON.stringify(mine.data) === snapshot) {
+          this.rev = mine.rev;
+          this.dirty = false;
+          this.setStatus('saved');
+          pushPupils();
+          setTimeout(() => { if (this.status === 'saved') this.setStatus('idle'); }, 2500);
+          this.busy = false;
+          return;
+        }
         this.busy = false;
         return this.resolveConflict();
       }
@@ -1497,10 +1533,16 @@ const SYNC = {
       pushPupils();  // обновляем то, что видят ученики
       setTimeout(() => { if (this.status === 'saved') this.setStatus('idle'); }, 2500);
     } catch (e) {
-      this.setStatus('offline');
+      this.fails = (this.fails || 0) + 1;
+      // первая неудача — молча пробуем ещё раз, связь часто подхватывается
+      if (this.fails === 1) this.setStatus('saving', 'Сохраняю…');
+      else this.setStatus('offline');
       clearTimeout(this.timer);
-      this.timer = setTimeout(() => this.push(), 8000);
+      this.timer = setTimeout(() => this.push(), Math.min(2000 * this.fails, 20000));
+      this.busy = false;
+      return;
     }
+    this.fails = 0;
     this.busy = false;
   },
 
@@ -1517,6 +1559,24 @@ const SYNC = {
       DB = normalizeDB(row.data); writeCache(); closeModal(); render(); this.dirty = false; this.setStatus('idle');
     };
     document.getElementById('takeLocal').onclick = () => { closeModal(); this.push(true); };
+  },
+
+  /** В офлайне тихо проверяем связь и сами возвращаемся, когда она появится */
+  watch() {
+    clearInterval(this.watchTimer);
+    this.watchTimer = setInterval(async () => {
+      if (!cloudOn() || !AUTH.s) return;
+      if (this.status !== 'offline' || this.busy) return;
+      try {
+        const row = await this.pull();
+        if (this.dirty) { this.setStatus('saving', 'Сохраняю…'); this.push(); return; }
+        if (row && row.rev > this.rev) {
+          this.rev = row.rev; DB = normalizeDB(row.data); writeCache(); render();
+        }
+        this.fails = 0;
+        this.setStatus('idle');
+      } catch (e) { /* связи всё ещё нет */ }
+    }, 15000);
   },
 
   /** проверить облако при возвращении на вкладку */
@@ -1649,8 +1709,17 @@ function normalizeDB(data) {
 
 async function startCloud() {
   SYNC.setStatus('loading');
+  SYNC.watch();
   let row = null;
-  try { row = await SYNC.pull(); }
+  try {
+    // на рваной связи первая попытка часто не доходит — пробуем несколько раз
+    let err = null;
+    for (let i = 0; i < 3; i++) {
+      try { row = await SYNC.pull(); err = null; break; }
+      catch (e) { err = e; if (i < 2) await sleep(1200); }
+    }
+    if (err) throw err;
+  }
   catch (e) {
     const c = readCache();
     if (c) { DB = normalizeDB(c.db); SYNC.rev = c.rev || 0; SYNC.setStatus('offline'); startApp(); return; }
