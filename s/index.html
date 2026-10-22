@@ -1060,6 +1060,10 @@ function authError(j) {
   return m || 'Не удалось войти';
 }
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const NET_PAUSE = [400, 1500];
+
+/* Связь бывает рваной: оборвавшуюся попытку повторяем, ответ сервера — нет. */
 async function api(path, opts, retry) {
   opts = opts || {};
   if (AUTH.s && AUTH.s.expires_at && AUTH.s.expires_at - 60 < Math.floor(Date.now() / 1000) && !retry) {
@@ -1069,12 +1073,27 @@ async function api(path, opts, retry) {
   h.apikey = CLOUD.key;
   if (opts.body != null && !h['Content-Type']) h['Content-Type'] = 'application/json';
   if (AUTH.s) h.Authorization = 'Bearer ' + AUTH.s.access_token;
-  const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h }));
-  if (r.status === 401 && !retry) {
-    try { await AUTH.refresh(); } catch (e) { return r; }
-    return api(path, opts, true);
+
+  const tries = opts.tries == null ? 3 : opts.tries;
+  let last = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h }));
+      if (r.status === 401 && !retry) {
+        try { await AUTH.refresh(); } catch (e) { return r; }
+        return api(path, opts, true);
+      }
+      if ((r.status === 502 || r.status === 503 || r.status === 504) && i < tries - 1) {
+        await sleep(NET_PAUSE[Math.min(i, NET_PAUSE.length - 1)]);
+        continue;
+      }
+      return r;
+    } catch (e) {
+      last = e;
+      if (i < tries - 1) await sleep(NET_PAUSE[Math.min(i, NET_PAUSE.length - 1)]);
+    }
   }
-  return r;
+  throw last || new Error('network');
 }
 /* =========================================================
    КАБИНЕТ УЧЕНИКА · только просмотр
