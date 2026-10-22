@@ -1075,10 +1075,15 @@ async function api(path, opts, retry) {
   if (AUTH.s) h.Authorization = 'Bearer ' + AUTH.s.access_token;
 
   const tries = opts.tries == null ? 3 : opts.tries;
+  // Порванное соединение не рвётся сразу, а молча висит. Поэтому у каждой
+  // попытки свой срок: не ответили — обрываем сами и пробуем заново.
+  const limit = opts.timeout || (opts.raw ? 120000 : 9000);
   let last = null;
   for (let i = 0; i < tries; i++) {
+    const ctl = new AbortController();
+    const tm = setTimeout(() => ctl.abort(), limit);
     try {
-      const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h }));
+      const r = await fetch(CLOUD.url + path, Object.assign({}, opts, { headers: h, signal: ctl.signal }));
       if (r.status === 401 && !retry) {
         try { await AUTH.refresh(); } catch (e) { return r; }
         return api(path, opts, true);
@@ -1091,7 +1096,7 @@ async function api(path, opts, retry) {
     } catch (e) {
       last = e;
       if (i < tries - 1) await sleep(NET_PAUSE[Math.min(i, NET_PAUSE.length - 1)]);
-    }
+    } finally { clearTimeout(tm); }
   }
   throw last || new Error('network');
 }
